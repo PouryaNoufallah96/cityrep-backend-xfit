@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Xfit.Domain/Xfit.Domain.csproj" />
+  <Project Path="XFit.Services/XFit.Services.csproj" />
+  <Project Path="XFit.Utilities/XFit.Utilities.csproj" />
+  <Project Path="XFit/XFit.csproj" />
+</Solution>

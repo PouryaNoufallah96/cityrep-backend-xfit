@@ -1,0 +1,6 @@
+@XFit_HostAddress = http://localhost:5093
+
+GET {{XFit_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

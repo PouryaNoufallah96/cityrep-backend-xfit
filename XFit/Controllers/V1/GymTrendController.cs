@@ -1,0 +1,57 @@
+﻿using Asp.Versioning;
+using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
+using Xfit.Domain.Collections;
+using XFit.Services._GymTrend;
+using XFit.Services._GymTrend.DTOs;
+using XFit.Utilities.Api;
+using XFit.Utilities.Filters;
+using XFit.Utilities.MongoDatabase.Filter;
+
+namespace XFit.Controllers.V1
+{
+
+    [ApiController]
+    [ApiResultFilter]
+    [ApiVersion("1")]
+    [Route("api/v{version:apiVersion}/[controller]")]
+    public class GymTrendController(IGymTrendService _gymTrendService) : ApiBaseController
+    {
+        [HttpPost("[action]")]
+        [Authorize]
+        [SwaggerOperation(Summary = "Create a gym trend", Tags = ["Gym Trend Admin"])]
+        public async Task<GymTrend> CreateAsync(CreateGymTrendUpdate update)
+        => await _gymTrendService.CreateAsync(update);
+
+
+        [HttpPost("[action]")]
+        [Authorize]
+        [SwaggerOperation(Summary = "Edit a gym trend", Tags = ["Gym Trend Admin"])]
+        public async Task<GymTrend> EditAsync(EditGymTrendUpdate update)
+            => await _gymTrendService.EditAsync(update);
+
+
+        [HttpPost("[action]")]
+        [Authorize]
+        [SwaggerOperation(Summary = "Remove a gym trend", Tags = ["Gym Trend Admin"])]
+        public async Task<bool> RemoveAsync(RemoveGymTrendUpdate update)
+        {
+            await _gymTrendService.RemoveAsync(update);
+            return true;
+        }
+
+
+        [HttpPost("[action]")]
+        [Authorize]
+        [SwaggerOperation(Summary = "Get a gym trend by id", Tags = ["Gym Trend Admin"])]
+        public async Task<GymTrend> GetByIdAsync(GymTrendIdUpdate update)
+            => await _gymTrendService.GetByIdAsync(update);
+
+
+        [HttpPost("[action]")]
+        [SwaggerOperation(Summary = "Get gym trends list", Tags = ["Gym Trend Admin"])]
+        public async Task<MonjoFilteredResult<GymTrend>> GetAllAsync(MonjoQuery query)
+            => await _gymTrendService.GetAllAsync(query);
+
+    }
+}

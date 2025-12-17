@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Xfit.Domain\Xfit.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="_Gym\" />
+    <Folder Include="_Rate\" />
+    <Folder Include="_Transactions\" />
+    <Folder Include="_Wallet\" />
+  </ItemGroup>
+
+</Project>
