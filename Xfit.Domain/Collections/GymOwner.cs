@@ -8,7 +8,7 @@ namespace Xfit.Domain.Collections
     public class GymOwner : CommonUser
     {
         public string FullName { get; set; }
-        public DateOnly? BirthDay { get; set; }
+        public DateTime? BirthDay { get; set; }
         public string NationalId { get; set; }
         public string Description { get; set; }
         public Contact Contact { get; set; }

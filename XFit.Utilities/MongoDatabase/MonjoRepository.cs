@@ -108,6 +108,13 @@ namespace XFit.Utilities.MongoDatabase
             return await _collection.CountDocumentsAsync(CombineExpressionToDefalutFilter(filterExpression));
         }
 
+
+        public async Task<long> CountAsync(FilterDefinition<TDocument> filter)
+        {
+            return await _collection.CountDocumentsAsync(CombineFilterToDefalutFilterDefinition(filter));
+        }
+
+
         public bool Exists(Expression<Func<TDocument, bool>> filterExpression)
         {
             return AsQueryable().Where(filterExpression).Any();

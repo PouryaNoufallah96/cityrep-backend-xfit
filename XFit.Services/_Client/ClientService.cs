@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Data;
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
 using Xfit.Domain.Collections;
 using Xfit.Domain.Common;
 using Xfit.Domain.Repositories.Contracts;
@@ -285,7 +283,7 @@ namespace XFit.Services._Client
         {
             var client = await GetOneClientForInternalUsageAsync(whois);
             client.FullName = update.FullName?.Trim();
-            client.BirthDay = update.BirthDay;
+            client.BirthDay = update.BirthDay.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc); 
             client.Gender = update.Gender;
             client.Address = new AddressInfo
             {
@@ -410,7 +408,9 @@ namespace XFit.Services._Client
                 Role = client.Role,
                 PhoneNumber = client.PhoneNumber,
                 FullName = client.FullName,
-                BirthDay = client.BirthDay,
+                BirthDay = client.BirthDay == null
+                    ? null
+                    : DateOnly.FromDateTime(client.BirthDay.Value),
                 Gender = client.Gender,
                 Address = client.Address,
                 Email = client.Email,

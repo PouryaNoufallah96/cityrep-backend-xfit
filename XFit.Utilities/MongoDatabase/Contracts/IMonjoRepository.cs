@@ -45,6 +45,8 @@ namespace XFit.Utilities.MongoDatabase.Contracts
 
         Task<long> CountAsync(Expression<Func<TDocument, bool>> filterExpression);
 
+        Task<long> CountAsync(FilterDefinition<TDocument> filter);
+
         bool Exists(Expression<Func<TDocument, bool>> filterExpression);
 
         Task<bool> ExistsAsync(Expression<Func<TDocument, bool>> filterExpression);

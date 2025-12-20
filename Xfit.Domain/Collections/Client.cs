@@ -11,7 +11,7 @@ namespace Xfit.Domain.Collections
         public Gender Gender { get; set; }
         public string Email { get; set; } = null;
         public AddressInfo Address { get; set; } = null;
-        public DateOnly? BirthDay { get; set; } = null;
+        public DateTime? BirthDay { get; set; } = null;
 
     } 
 }

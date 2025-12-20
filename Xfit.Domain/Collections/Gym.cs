@@ -9,20 +9,17 @@ namespace Xfit.Domain.Collections
     public class Gym : BaseDocument
     {
         public string GymId { get; set; } = Guid.NewGuid().ToString("N");
-
-        public string GymOwnerProfileId { get; set; }
-        public string UserPublicKey { get; set; }
-
+        public string GymOwnerPublicKey { get; set; }
 
         public string Title { get; set; }
         public string Description { get; set; }
         public GymLevel Level { get; set; }
 
-        public List<Gender> SupportedGender { get; set; } = null;
-
+        public List<Gender> SupportedGender { get; set; }
+        public GymState State { get; set; } 
 
         public AddressInfo Address { get; set; }
-        public GymTrendWorkingHour GymTrendWorkingHour { get; set; } 
+        public List<GymTrendWorkingHour> GymTotalWorkingHour { get; set; }
 
         public Contact Contact { get; set; } = null;
         public List<GymImage> Images { get; set; } = null;
@@ -30,11 +27,17 @@ namespace Xfit.Domain.Collections
         public List<GymFacilityRef> Facilities { get; set; } = null;
 
         public decimal Rate { get; set; }
-         
+
     }
 
 
-    
+    public enum GymState
+    {
+        NotVerified,
+        Active,
+        Inactive,
+        Ban
+    }
 
     public class GymFacilityRef
     {
@@ -69,8 +72,8 @@ namespace Xfit.Domain.Collections
     public class GymTrendWorkingHour
     {
         public DayOfWeek DayOfWeek { get; set; }
-        public TimeSpan From { get; set; }
-        public TimeSpan To { get; set; }
+        public long? From { get; set; }
+        public long? To { get; set; }
         public bool IsClosed { get; set; }
     }
 
