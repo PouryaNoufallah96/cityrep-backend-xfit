@@ -6,6 +6,7 @@ using Xfit.Domain.Repositories.Contracts;
 using XFit.Services._Client.DTOs.Results;
 using XFit.Services._Client.DTOs.Updates;
 using XFit.Services._Common.DTOs;
+using XFit.Services._Wallet;
 using XFit.Utilities.Constants;
 using XFit.Utilities.Enums;
 using XFit.Utilities.Exceptions;
@@ -22,6 +23,7 @@ namespace XFit.Services._Client
         ISmsService _smsService,
         IRandomService _randomService,
         IJwtService _jwtService,
+        IWalletService _walletService,
         JwtServiceSettings _jwtSettings) : IClientService , IScopedDependency
     {
         /// <summary>
@@ -134,6 +136,7 @@ namespace XFit.Services._Client
                     client.Status = UserStatus.Active;
                 client = AddLoginDateToUser(client);
                 await _clientRepository.ReplaceOneAsync(client);
+                await _walletService.InitWalletAsync(client.PublicKey, UserRole.Client);
                 return _jwtService.Authenticate(client.PublicKey, "Client", client.PhoneNumber, client.Permissions, client.SecurityStamp);
             }
             catch (BadRequestException ex)

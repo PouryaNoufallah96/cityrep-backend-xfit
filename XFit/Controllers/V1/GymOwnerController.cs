@@ -47,6 +47,7 @@ namespace XFit.Controllers.V1
 
 
         [HttpGet("[action]")]
+        [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(
             Summary = "Renew gym owner access token",
@@ -63,6 +64,7 @@ namespace XFit.Controllers.V1
         #region Profile
 
         [HttpGet("[action]")]
+        [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(
             Summary = "Get authenticated gym owner profile",
@@ -72,6 +74,7 @@ namespace XFit.Controllers.V1
 
 
         [HttpPut("[action]")]
+        [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(
             Summary = "Create or update gym owner profile data",
@@ -82,6 +85,7 @@ namespace XFit.Controllers.V1
 
 
         [HttpPut("[action]")]
+        [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(
             Summary = "Create or update gym owner identity documents",
@@ -92,6 +96,7 @@ namespace XFit.Controllers.V1
 
 
         [HttpPut("[action]")]
+        [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(
             Summary = "Request to change gym owner phone number",
@@ -102,6 +107,7 @@ namespace XFit.Controllers.V1
 
 
         [HttpPut("[action]")]
+        [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(
             Summary = "Verify gym owner phone number change request",

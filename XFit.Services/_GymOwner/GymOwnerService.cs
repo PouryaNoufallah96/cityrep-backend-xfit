@@ -5,6 +5,7 @@ using Xfit.Domain.Repositories.Contracts;
 using XFit.Services._Common.DTOs;
 using XFit.Services._GymOwner.DTOs.Results;
 using XFit.Services._GymOwner.DTOs.Updates;
+using XFit.Services._Wallet;
 using XFit.Utilities.Constants;
 using XFit.Utilities.Enums;
 using XFit.Utilities.Exceptions;
@@ -19,6 +20,7 @@ namespace XFit.Services._GymOwner
     public class GymOwnerService(IGymOwnerRepository _gymOwnerRepository,
          ICaptchaService _captchaService,
         ISmsService _smsService,
+        IWalletService _walletService,
         IRandomService _randomService,
         IJwtService _jwtService,
         JwtServiceSettings _jwtSettings) : IGymOwnerService, IScopedDependency
@@ -134,6 +136,8 @@ namespace XFit.Services._GymOwner
                     gymOwner.Status = UserStatus.Active;
                 gymOwner = AddLoginDateToUser(gymOwner);
                 await _gymOwnerRepository.ReplaceOneAsync(gymOwner);
+                await _walletService.InitWalletAsync(gymOwner.PublicKey, UserRole.GymOwner);
+
                 return _jwtService.Authenticate(gymOwner.PublicKey, "GymOwner", gymOwner.PhoneNumber, gymOwner.Permissions, gymOwner.SecurityStamp);
             }
             catch (BadRequestException ex)

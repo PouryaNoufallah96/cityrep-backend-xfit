@@ -1,4 +1,5 @@
-﻿using MongoDB.Driver.Linq;
+﻿using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 using Xfit.Domain.Collections;
 using Xfit.Domain.Common;
 using Xfit.Domain.Repositories.Contracts;
@@ -9,22 +10,98 @@ using static XFit.Utilities.Constants.RegisterMode;
 namespace XFit.Services._Wallet
 {
     public class WalletService(
+        IWalletRepository _walletRepository,
         IDepositRepository _depositRepository,
         IWithdrawalRepository _withdrawalRepository,
         IGymAttendanceRepository _gymAttendanceRepository) : IWalletService, IScopedDependency
     {
-        public Task<WalletResult> GetOrCreateWalletAsync(string whois, string userRole)
+        public async Task<WalletResult> GetOrCreateWalletAsync(string whois, string userRole)
         {
+
+            var wallet = await _walletRepository.AsQueryable()
+                .FirstOrDefaultAsync(q => q.WalletId == whois);
+
+            if (wallet != null)
+                return new WalletResult
+                {
+                    WalletId = wallet.WalletId,
+                    TotalBalance = wallet.TotalBalance,
+                    AvailableBalance = wallet.AvailableBalance,
+                    FrozenBalance = wallet.FrozenBalance
+                };
+
+
             if (userRole.ToLower() == "client")
-                return GetClientWalletAsync(whois);
+                return await SyncClientWalletAsync(whois);
 
             else if (userRole.ToLower() == "gymowner")
-                return GetGymOwnerWalletAsync(whois);
+                return await SyncGymOwnerWalletAsync(whois);
 
             else throw new BadRequestException("کاربر نامشخص");
+
         }
 
-        private async Task<WalletResult> GetGymOwnerWalletAsync(string whois)
+        public async Task MakeWalletShouldUpdateAsync(string publicKey)
+        { 
+            var filter = Builders<Wallet>.Filter.Eq(q => q.WalletId, publicKey);
+            var update = Builders<Wallet>.Update.Set(q => q.ShouldUpdate, true);
+            await _walletRepository.FindOneAndUpdateAsync(filter, update);
+        }
+
+        public async Task MakeWalletShouldUpdateAsync(List<string> publicKeys)
+        { 
+            var filter = Builders<Wallet>.Filter.In(q => q.WalletId, publicKeys);
+            var update = Builders<Wallet>.Update.Set(q => q.ShouldUpdate, true);
+            await _walletRepository.UpdateManyAsync(filter, update);
+        }
+
+        public async Task InitWalletAsync(string publicKey , UserRole userRole)
+        {
+            try
+            {
+                var wallet = new Wallet
+                {
+                    WalletId = publicKey,
+                    TotalBalance = 0m,
+                    AvailableBalance = 0m,
+                    FrozenBalance = 0m,
+                    Role = userRole,
+                    ShouldUpdate = false
+                };
+
+                await _walletRepository.InsertOneAsync(wallet);
+            }
+            catch (Exception)
+            {
+                throw new BaseException();
+            }
+                
+        }
+
+        public async Task SyncWalletAsync()
+        {
+            var wallet = await  _walletRepository.AsQueryable()
+                .Where(q => q.ShouldUpdate == true)
+                .OrderByDescending(q => q.ModifiedMoment)
+                .FirstOrDefaultAsync();
+
+            if( wallet == null)
+                return;
+            await SyncWalletAsync(wallet);
+
+        }
+
+
+        private async Task SyncWalletAsync(Wallet wallet)
+        {
+            if (wallet.Role == UserRole.Client)
+                await SyncClientWalletAsync(wallet.WalletId);
+            else
+                await SyncGymOwnerWalletAsync(wallet.WalletId);
+         
+        }
+
+        private async Task<WalletResult> SyncGymOwnerWalletAsync(string whois)
         {
             var totalIncome = await _gymAttendanceRepository.AsQueryable()
                 .Where(q =>
@@ -62,7 +139,7 @@ namespace XFit.Services._Wallet
             };
         }
 
-        private async Task<WalletResult> GetClientWalletAsync(string whois)
+        private async Task<WalletResult> SyncClientWalletAsync(string whois)
         {
             var clientDeposits = await _depositRepository.AsQueryable()
              .Where(q => q.SourcePublicKey == whois && q.State == Xfit.Domain.Collections.DepositState.Done)
@@ -83,7 +160,6 @@ namespace XFit.Services._Wallet
             };
         }
 
-
-
+      
     }
-} 
+}

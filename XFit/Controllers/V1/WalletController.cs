@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using XFit.Services._Wallet;
 using XFit.Services._Wallet.DTOs;
 using XFit.Utilities.Api;
+using XFit.Utilities.Attributes;
 using XFit.Utilities.Filters;
 
 namespace XFit.Controllers.V1
@@ -16,6 +17,7 @@ namespace XFit.Controllers.V1
     {
 
         [HttpGet("[action]")]
+        [CustomRateLimit]
         [Authorize]
         public async Task<WalletResult> GetOrCreateWalletAsync()
             => await _walletService.GetOrCreateWalletAsync(PublicKey, Role);

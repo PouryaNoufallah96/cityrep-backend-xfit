@@ -46,6 +46,7 @@ namespace XFit.Controllers.V1
 
 
         [HttpGet("[action]")]
+        [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(
             Summary = "Renew client access token",
@@ -62,6 +63,7 @@ namespace XFit.Controllers.V1
         #region Profile
 
         [HttpGet("[action]")]
+        [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(
             Summary = "Get authenticated client profile",
@@ -71,6 +73,7 @@ namespace XFit.Controllers.V1
 
 
         [HttpPut("[action]")]
+        [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(
             Summary = "Create or update client profile data",
@@ -81,6 +84,7 @@ namespace XFit.Controllers.V1
 
 
         [HttpPut("[action]")]
+        [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(
             Summary = "Request to change client phone number",
@@ -91,6 +95,7 @@ namespace XFit.Controllers.V1
 
 
         [HttpPut("[action]")]
+        [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(
             Summary = "Verify client phone number change request",

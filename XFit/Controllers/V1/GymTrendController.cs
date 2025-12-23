@@ -5,6 +5,7 @@ using Xfit.Domain.Collections;
 using XFit.Services._GymTrend;
 using XFit.Services._GymTrend.DTOs;
 using XFit.Utilities.Api;
+using XFit.Utilities.Attributes;
 using XFit.Utilities.Filters;
 using XFit.Utilities.MongoDatabase.Filter;
 
@@ -18,6 +19,7 @@ namespace XFit.Controllers.V1
     public class GymTrendController(IGymTrendService _gymTrendService) : ApiBaseController
     {
         [HttpPost("[action]")]
+        [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(Summary = "Create a gym trend", Tags = ["Gym Trend Admin"])]
         public async Task<GymTrend> CreateAsync(CreateGymTrendUpdate update)
@@ -25,6 +27,7 @@ namespace XFit.Controllers.V1
 
 
         [HttpPost("[action]")]
+        [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(Summary = "Edit a gym trend", Tags = ["Gym Trend Admin"])]
         public async Task<GymTrend> EditAsync(EditGymTrendUpdate update)
@@ -32,6 +35,7 @@ namespace XFit.Controllers.V1
 
 
         [HttpPost("[action]")]
+        [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(Summary = "Remove a gym trend", Tags = ["Gym Trend Admin"])]
         public async Task<bool> RemoveAsync(RemoveGymTrendUpdate update)
@@ -42,12 +46,14 @@ namespace XFit.Controllers.V1
 
 
         [HttpPost("[action]")]
+        [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(Summary = "Get a gym trend by id", Tags = ["Gym Trend Admin"])]
         public async Task<GymTrend> GetByIdAsync(GymTrendIdUpdate update)
             => await _gymTrendService.GetByIdAsync(update);
 
 
+        [CustomRateLimit]
         [HttpPost("[action]")]
         [SwaggerOperation(Summary = "Get gym trends list", Tags = ["Gym Trend Admin"])]
         public async Task<MonjoFilteredResult<GymTrend>> GetAllAsync(MonjoQuery query)

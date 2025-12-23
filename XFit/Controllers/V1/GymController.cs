@@ -5,6 +5,7 @@ using XFit.Services._Gym;
 using XFit.Services._Gym.DTOs.Results;
 using XFit.Services._Gym.DTOs.Updates;
 using XFit.Utilities.Api;
+using XFit.Utilities.Attributes;
 using XFit.Utilities.Filters;
 using XFit.Utilities.MongoDatabase.Filter;
 
@@ -18,18 +19,21 @@ namespace XFit.Controllers.V1
     public class GymController(IGymService _gymService) : ApiBaseController
     {
         [HttpPost("[action]")]
+        [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(Summary = "Add a new gym", Tags = ["Gym GymOwner"])]
         public async Task<GymResult> AddGymAsync(AddGymUpdate update)
        => await _gymService.AddGymAsync(update, PublicKey);
 
         [HttpPost("[action]")]
+        [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(Summary = "Edit an existing gym", Tags = ["Gym GymOwner"])]
         public async Task<GymResult> EditGymAsync(EditGymUpdate update)
             => await _gymService.EditGymAsync(update, PublicKey);
 
         [HttpPost("[action]")]
+        [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(Summary = "Get all gyms for owner", Tags = ["Gym GymOwner"])]
         public async Task<GymListResult> GetAllGymsAsync(GymSimpleFilter filter)
@@ -38,16 +42,19 @@ namespace XFit.Controllers.V1
 
         // ===== Client Side =====
 
+        [CustomRateLimit]
         [HttpPost("[action]")]
         [SwaggerOperation(Summary = "Get one gym by id", Tags = ["Gym Client"])]
         public async Task<GymResult> GetOneGymAsync(GymIdUpdate update)
             => await _gymService.GetOneGymAsync(update);
 
+        [CustomRateLimit]
         [HttpPost("[action]")]
         [SwaggerOperation(Summary = "Get gyms with filters", Tags = ["Gym Client"])]
         public async Task<GymListResult> GetGymsWithFilterAsync(GymFilter update)
             => await _gymService.GetGymsWithFilterAsync(update);
 
+        [CustomRateLimit]
         [HttpPost("[action]")]
         [SwaggerOperation(Summary = "Get gym data by slug", Tags = ["Gym Client"])]
         public async Task<GymFullResult> GetGymDataBySlugAsync(string slug)
@@ -56,12 +63,14 @@ namespace XFit.Controllers.V1
 
         // ===== Admin Side =====
 
+        [CustomRateLimit]
         [HttpPost("[action]")]
         [Authorize]
         [SwaggerOperation(Summary = "Get all gyms for admin", Tags = ["Gym Admin"])]
         public async Task<MonjoFilteredResult<GymAdminResult>> GetAllGymsForAdminAsync(MonjoQuery query)
             => await _gymService.GetAllGymsForAdminAsync(query);
 
+        [CustomRateLimit]
         [HttpPost("[action]")]
         [Authorize]
         [SwaggerOperation(Summary = "Add a gym by admin", Tags = ["Gym Admin"])]
@@ -69,12 +78,14 @@ namespace XFit.Controllers.V1
             => await _gymService.AddGymByAdminAsync(update);
 
         [HttpPost("[action]")]
+        [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(Summary = "Edit a gym by admin", Tags = ["Gym Admin"])]
         public async Task<GymAdminResult> EditGymByAdminAsync(EditGymByAdminUpdate update)
             => await _gymService.EditGymByAdminAsync(update);
 
         [HttpPost("[action]")]
+        [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(Summary = "remove a gym by admin", Tags = ["Gym Admin"])]
         public async Task<GymAdminResult> RemoveGymByAdminAsync(GymIdUpdate gymIdUpdate)
