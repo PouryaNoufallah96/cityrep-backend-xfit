@@ -6,11 +6,6 @@ namespace XFit.Utilities.MongoDatabase.Extensions
 {
     public static class MonjoOrderExtensions
     {
-        public static IMongoQueryable<T> Apply<T>(this IList<MonjoOrder> Order, IMongoQueryable<T> query, string collectionName = null)
-        {
-            return Order.Apply((IQueryable<T>)query, collectionName).AsMongoQueryable();
-        }
-
         public static IQueryable<T> Apply<T>(this IList<MonjoOrder> Order, IQueryable<T> query, string collectionName = null)
         {
             var parameterExpression = Expression.Parameter(typeof(T), "t");

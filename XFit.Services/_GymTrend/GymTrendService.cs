@@ -1,5 +1,6 @@
 ﻿using Xfit.Domain.Collections;
 using Xfit.Domain.Repositories.Contracts;
+using XFit.Services._Gym;
 using XFit.Services._GymTrend.DTOs;
 using XFit.Utilities.Exceptions.Common;
 using XFit.Utilities.MongoDatabase.Filter;
@@ -7,7 +8,7 @@ using static XFit.Utilities.Constants.RegisterMode;
 
 namespace XFit.Services._GymTrend
 {
-    public class GymTrendService(IGymTrendRepository _gymTrendRepository)
+    public class GymTrendService(IGymTrendRepository _gymTrendRepository, IGymService _gymService)
         : IGymTrendService, IScopedDependency
     {
         /// <summary>
@@ -67,6 +68,8 @@ namespace XFit.Services._GymTrend
             var gymTrend = await _gymTrendRepository.FindOneAsync(x =>
                 x.GymTrendId == update.GymTrendId
             ) ?? throw new NotFoundException("Gym trend not found.");
+
+            if (await _gymService.IsTrendUsedAsync(update.GymTrendId)) throw new BadRequestException("this trend is used in gyms");
 
             await _gymTrendRepository.DeleteOneAsync(x =>
                 x.GymTrendId == update.GymTrendId

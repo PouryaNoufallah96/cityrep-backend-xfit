@@ -8,12 +8,6 @@ namespace XFit.Utilities.MongoDatabase.Extensions
 {
     public static class MonjoConditionExtensions
     {
-        public static IMongoQueryable<T> Apply<T>(this IList<IList<MonjoCondition>> Where, IMongoQueryable<T> query,
-            string collectionName = null)
-        {
-            return Where.Apply((IQueryable<T>)query, collectionName).AsMongoQueryable();
-        }
-
         public static IQueryable<T> Apply<T>(this IList<IList<MonjoCondition>> Where, IQueryable<T> query,
             string collectionName = null)
         {

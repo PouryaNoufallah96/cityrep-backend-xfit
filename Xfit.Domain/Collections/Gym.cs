@@ -14,7 +14,8 @@ namespace Xfit.Domain.Collections
         public string Title { get; set; }
         public string Description { get; set; }
         public GymLevel Level { get; set; }
-
+        public string Slug { get; set; }
+         
         public List<Gender> SupportedGender { get; set; }
         public GymState State { get; set; } 
 

@@ -2,12 +2,13 @@
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using System.Linq.Expressions;
-using XFit.Utilities.MongoDatabase.Builders;
-using XFit.Utilities.MongoDatabase.Filter;
-using XFit.Utilities.MongoDatabase.Documents;
-using XFit.Utilities.MongoDatabase.Contracts;
 using XFit.Utilities.Attributes;
+using XFit.Utilities.Constants;
+using XFit.Utilities.MongoDatabase.Builders;
+using XFit.Utilities.MongoDatabase.Contracts;
+using XFit.Utilities.MongoDatabase.Documents;
 using XFit.Utilities.MongoDatabase.Extensions;
+using XFit.Utilities.MongoDatabase.Filter;
 
 namespace XFit.Utilities.MongoDatabase
 {
@@ -54,7 +55,7 @@ namespace XFit.Utilities.MongoDatabase
             return _connection.Database.ContainsCollection(CollectionName);
         }
 
-        public virtual IMongoQueryable<TDocument> AsQueryable()
+        public virtual IQueryable<TDocument> AsQueryable()
         {
             return _collection.AsQueryable().Where(t => !t.IsDeleted);
         }
@@ -108,12 +109,29 @@ namespace XFit.Utilities.MongoDatabase
             return await _collection.CountDocumentsAsync(CombineExpressionToDefalutFilter(filterExpression));
         }
 
-
         public async Task<long> CountAsync(FilterDefinition<TDocument> filter)
         {
             return await _collection.CountDocumentsAsync(CombineFilterToDefalutFilterDefinition(filter));
         }
 
+
+        public virtual IFindFluent<TDocument, TDocument> Find(FilterDefinition<TDocument> filter)
+        {
+            return _collection.Find(CombineFilterToDefalutFilterDefinition(filter));
+        }
+
+        public virtual async Task<IAsyncCursor<TDocument>> FindAsync(
+            FilterDefinition<TDocument> filter,
+            int batchSize = 500,
+            CancellationToken cancellationToken = default)
+        {
+            var finalFilter = CombineFilterToDefalutFilterDefinition(filter);
+
+            return await _collection.FindAsync(finalFilter, new FindOptions<TDocument>
+            {
+                BatchSize = batchSize
+            }, cancellationToken);
+        }
 
         public bool Exists(Expression<Func<TDocument, bool>> filterExpression)
         {
@@ -143,11 +161,6 @@ namespace XFit.Utilities.MongoDatabase
             });
         }
 
-        public virtual IFindFluent<TDocument, TDocument> Find(FilterDefinition<TDocument> filter)
-        {
-            return _collection.Find(CombineFilterToDefalutFilterDefinition(filter));
-        }
-
         public virtual TDocument FindOne(Expression<Func<TDocument, bool>> filterExpression)
         {
             return _collection.Find(CombineExpressionToDefalutFilter(filterExpression)).FirstOrDefault();
@@ -172,11 +185,13 @@ namespace XFit.Utilities.MongoDatabase
 
         public virtual void InsertOne(TDocument document)
         {
+            //document.SetCreatedByInfo();
             _collection.InsertOne(document);
         }
 
         public virtual async Task InsertOneAsync(TDocument document)
         {
+            //document.SetCreatedByInfo();
             await _collection.InsertOneAsync(document);
         }
 
@@ -187,20 +202,25 @@ namespace XFit.Utilities.MongoDatabase
 
         public virtual async Task InsertManyAsync(IEnumerable<TDocument> documents)
         {
+            //foreach (var doc in documents)
+            //{
+            //    doc.SetCreatedByInfo();
+            //}
             await _collection.InsertManyAsync(documents);
         }
 
         public virtual void ReplaceOne(TDocument document)
         {
             var filter = Builders<TDocument>.Filter.Eq(IdentifierName, document.GetIdentifierValue());
-            document.ModifiedMoment = DateTime.UtcNow;
+
+            UpdateDocument(document);
             _collection.FindOneAndReplace(CombineFilterToDefalutFilterDefinition(filter), document);
         }
 
         public virtual async Task ReplaceOneAsync(TDocument document)
         {
             var filter = Builders<TDocument>.Filter.Eq(IdentifierName, document.GetIdentifierValue());
-            document.ModifiedMoment = DateTime.UtcNow;
+            UpdateDocument(document);
             await _collection.FindOneAndReplaceAsync(CombineFilterToDefalutFilterDefinition(filter), document);
         }
 
@@ -225,42 +245,47 @@ namespace XFit.Utilities.MongoDatabase
                 await _collection.BulkWriteAsync(operations, new BulkWriteOptions { IsOrdered = false });
         }
 
+        public Task BulkWriteAsync(IEnumerable<WriteModel<TDocument>> requests)
+        {
+            return _collection.BulkWriteAsync(requests);
+        }
+
+
         public virtual void DeleteMany(Expression<Func<TDocument, bool>> filterExpression)
         {
-            var update = Builders<TDocument>.Update.Set(q => q.IsDeleted, true).Set(q => q.DeletedMoment, DateTime.UtcNow);
+            var update = CreateDeleteUpdate();
             _collection.UpdateMany(CombineExpressionToDefalutFilter(filterExpression), update);
         }
 
         public virtual async Task DeleteManyAsync(Expression<Func<TDocument, bool>> filterExpression)
         {
-            var update = Builders<TDocument>.Update.Set(q => q.IsDeleted, true).Set(q => q.DeletedMoment, DateTime.UtcNow);
+            var update = CreateDeleteUpdate();
             await _collection.UpdateManyAsync(CombineExpressionToDefalutFilter(filterExpression), update);
         }
 
         public virtual void DeleteOne(Expression<Func<TDocument, bool>> filterExpression)
         {
-            var update = Builders<TDocument>.Update.Set(q => q.IsDeleted, true).Set(q => q.DeletedMoment, DateTime.UtcNow);
+            var update = CreateDeleteUpdate();
             _collection.FindOneAndUpdate(CombineExpressionToDefalutFilter(filterExpression), update);
         }
 
         public virtual async Task DeleteOneAsync(Expression<Func<TDocument, bool>> filterExpression)
         {
-            var update = Builders<TDocument>.Update.Set(q => q.IsDeleted, true).Set(q => q.DeletedMoment, DateTime.UtcNow);
+            var update = CreateDeleteUpdate();
             await _collection.FindOneAndUpdateAsync(CombineExpressionToDefalutFilter(filterExpression), update);
         }
-
 
         public virtual void DeleteById(object id)
         {
             var filter = Builders<TDocument>.Filter.Eq(IdentifierName, id);
-            var update = Builders<TDocument>.Update.Set(q => q.IsDeleted, true).Set(q => q.DeletedMoment, DateTime.UtcNow);
+            var update = CreateDeleteUpdate();
             _collection.FindOneAndUpdate(CombineFilterToDefalutFilterDefinition(filter), update);
         }
 
         public virtual async Task DeleteByIdAsync(object id)
         {
             var filter = Builders<TDocument>.Filter.Eq(IdentifierName, id);
-            var update = Builders<TDocument>.Update.Set(q => q.IsDeleted, true).Set(q => q.DeletedMoment, DateTime.UtcNow);
+            var update = CreateDeleteUpdate();
             await _collection.FindOneAndUpdateAsync(CombineFilterToDefalutFilterDefinition(filter), update);
         }
 
@@ -316,28 +341,34 @@ namespace XFit.Utilities.MongoDatabase
             return new MonjoIndexBuilder<TDocument>(this, indexBuilder.Descending(filterExpression));
         }
 
+
+
+        public void CreateGeo2DSphereIndex(
+            string fieldPath,
+            string indexName = null,
+            bool sparse = true
+        )
+        {
+            var keys = Builders<TDocument>.IndexKeys.Geo2DSphere(fieldPath);
+
+            var options = new CreateIndexOptions
+            {
+                Name = indexName ?? $"idx_{fieldPath.Replace(".", "_")}_2dsphere",
+                Sparse = sparse
+            };
+
+            _collection.Indexes.CreateOne(new CreateIndexModel<TDocument>(keys, options));
+        }
+
+
+
+
+
+
         public async Task<TDocument> FindOneAndUpdateAsync(FilterDefinition<TDocument> filter,
             UpdateDefinition<TDocument> update)
         {
             return await _collection.FindOneAndUpdateAsync(CombineFilterToDefalutFilterDefinition(filter), CombineUpdateToDefalutUpdateDefinition(update));
-        }
-
-        public async Task<TDocument> FindOneAndUpdateWithOptionAsync(FilterDefinition<TDocument> filter,UpdateDefinition<TDocument> update,FindOneAndUpdateOptions<TDocument> options = null, CancellationToken cancellationToken = default)
-        {
-            var combinedFilter = CombineFilterToDefalutFilterDefinition(filter);
-            var combinedUpdate = CombineUpdateToDefalutUpdateDefinition(update);
-
-            options ??= new FindOneAndUpdateOptions<TDocument>
-            {
-                ReturnDocument = ReturnDocument.After 
-            };
-
-            return await _collection.FindOneAndUpdateAsync(
-                combinedFilter,
-                combinedUpdate,
-                options,
-                cancellationToken
-            );
         }
 
         public TDocument FindOneAndUpdate(FilterDefinition<TDocument> filter, UpdateDefinition<TDocument> update)
@@ -351,23 +382,12 @@ namespace XFit.Utilities.MongoDatabase
             return await _collection.UpdateManyAsync(CombineFilterToDefalutFilterDefinition(filter), CombineUpdateToDefalutUpdateDefinition(update));
         }
 
-        public virtual async Task UpdateManyAsync(IEnumerable<UpdateManyInput<TDocument>> updateManyInputs)
+        public async Task<UpdateResult> UpdateManyAsync(FilterDefinition<TDocument> filter, UpdateDefinition<TDocument> update, UpdateOptions options = null)
         {
-            var operations = new List<WriteModel<TDocument>>();
-
-            foreach (var input in updateManyInputs)
-            {
-                var filter = Builders<TDocument>.Filter.Where(input.FilterExpression);
-                var updateModel = new UpdateManyModel<TDocument>(filter, input.UpdateDefinition);
-                operations.Add(updateModel);
-            }
-
-            if (operations.Count > 0)
-            {
-                await _collection.BulkWriteAsync(operations, new BulkWriteOptions { IsOrdered = false });
-            }
+            return await _collection.UpdateManyAsync(CombineFilterToDefalutFilterDefinition(filter),
+                CombineUpdateToDefalutUpdateDefinition(update),
+                options);
         }
-
 
         public UpdateResult UpdateMany(FilterDefinition<TDocument> filter, UpdateDefinition<TDocument> update)
         {
@@ -440,6 +460,11 @@ namespace XFit.Utilities.MongoDatabase
             return await _collection.UpdateManyAsync(CombineExpressionToDefalutFilter(filter), CombineUpdateToDefalutUpdateDefinition(update), new UpdateOptions() { IsUpsert = true });
         }
 
+        public virtual void RealDeleteMany(Expression<Func<TDocument, bool>> filterExpression)
+        {
+            _collection.DeleteManyAsync(filterExpression);
+        }
+
         public virtual async Task RealDeleteManyAsync(Expression<Func<TDocument, bool>> filterExpression)
         {
             await _collection.DeleteManyAsync(filterExpression);
@@ -460,20 +485,47 @@ namespace XFit.Utilities.MongoDatabase
             return combinedFilter;
         }
 
+        //private static UpdateDefinition<TDocument> CombineUpdateToDefalutUpdateDefinition(UpdateDefinition<TDocument> update)
+        //{
+        //    return update.Set(q => q.ModifiedMoment, DateTime.UtcNow);
+        //}
+
         private static UpdateDefinition<TDocument> CombineUpdateToDefalutUpdateDefinition(UpdateDefinition<TDocument> update)
         {
-            return update.Set(q => q.ModifiedMoment, DateTime.UtcNow);
+            var user = CurrentRequestContext.User ?? new RequestUserInfo();
+
+            return update
+                .Set(q => q.ModifiedMoment, DateTime.UtcNow)
+                .Set(q => q.ModifiedBy, user.PublicKey)
+                .Set(q => q.ModifiedByInfo, user.DisplayInfo);
         }
+
+        private UpdateDefinition<TDocument> CreateDeleteUpdate()
+        {
+            var user = CurrentRequestContext.User ?? new RequestUserInfo();
+
+            return Builders<TDocument>.Update
+                .Set(q => q.IsDeleted, true)
+                .Set(q => q.DeletedMoment, DateTime.UtcNow)
+                .Set(q => q.DeletedBy, user.PublicKey)
+                .Set(q => q.DeletedByInfo, user.DisplayInfo);
+        }
+
+        private void UpdateDocument(TDocument document)
+        {
+            var user = CurrentRequestContext.User ?? new RequestUserInfo();
+
+            document.ModifiedMoment = DateTime.UtcNow;
+            document.ModifiedByInfo = user.DisplayInfo;
+            document.ModifiedBy = user.PublicKey;
+
+        }
+
     }
+
     public class ReplaceManyInput<TDocument>
     {
         public TDocument Document { get; set; }
         public Expression<Func<TDocument, bool>> FilterExpression { get; set; }
     }
-    public class UpdateManyInput<TDocument>
-    {
-        public Expression<Func<TDocument, bool>> FilterExpression { get; set; }
-        public UpdateDefinition<TDocument> UpdateDefinition { get; set; }
-    }
-
 }

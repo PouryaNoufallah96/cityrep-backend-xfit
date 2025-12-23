@@ -1,5 +1,6 @@
 ﻿using Xfit.Domain.Collections;
 using Xfit.Domain.Repositories.Contracts;
+using XFit.Services._Gym;
 using XFit.Services._GymFacility.DTOs;
 using XFit.Utilities.Exceptions.Common;
 using XFit.Utilities.MongoDatabase.Filter;
@@ -7,7 +8,7 @@ using static XFit.Utilities.Constants.RegisterMode;
 
 namespace XFit.Services._GymFacility
 {
-    public class GymFacilityService(IGymFacilityRepository _gymFacilityRepository) : IGymFacilityService, IScopedDependency
+    public class GymFacilityService(IGymFacilityRepository _gymFacilityRepository, IGymService _gymService) : IGymFacilityService, IScopedDependency
     {
 
         /// <summary>
@@ -72,7 +73,7 @@ namespace XFit.Services._GymFacility
             if (gymFactility == null)
                 throw new Exception("Gym facility not found.");
 
-            //TODO Sync
+            if (await _gymService.IsFacilityUsedAsync(update.GymFacilityId)) throw new BadRequestException("خدمات مورد نظر در باشگاه ها درحال استفاده است.");
 
             await _gymFacilityRepository.DeleteOneAsync(q => q.FacilityId == update.GymFacilityId);
         }

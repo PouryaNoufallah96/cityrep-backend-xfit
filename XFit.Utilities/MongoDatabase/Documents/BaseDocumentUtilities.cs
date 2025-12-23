@@ -16,17 +16,6 @@ namespace XFit.Utilities.MongoDatabase.Documents
 
             return query;
         }
-        public static IMongoQueryable<T> FilterByDate<T>(IMongoQueryable<T> query, DateTime? from = null, DateTime? to = null)
-            where T : BaseDocument
-        {
-            if (from != null && to != null)
-                query = query.Where(q => q.CreatedMoment >= from.Value && q.CreatedMoment <= to.Value);
-            else if (from == null && to != null)
-                query = query.Where(q => q.CreatedMoment <= to.Value);
-            else if (from != null && to == null)
-                query = query.Where(q => q.CreatedMoment >= from.Value);
-
-            return query;
-        }
+     
     }
 }

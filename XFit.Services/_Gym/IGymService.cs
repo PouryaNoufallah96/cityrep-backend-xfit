@@ -11,21 +11,28 @@ namespace XFit.Services._Gym
         // gymOnwer side
         Task<GymResult> AddGymAsync(AddGymUpdate update, string gymOwnerPublicKey);
         Task<GymResult> EditGymAsync(EditGymUpdate update, string gymOwnerPublicKey);
-        Task<GymListResult> GetAllGymsAsync(string whois);
-         
+        Task<GymListResult> GetAllGymsAsync(GymSimpleFilter filter, string whois); 
+        
 
 
         //client
-        Task<GymResult> GetOneGymAsync();
+        Task<GymResult> GetOneGymAsync(GymIdUpdate update);
         Task<GymListResult> GetGymsWithFilterAsync(GymFilter update);
+        Task<GymFullResult> GetGymDataBySlugAsync(string slug); 
 
 
         //admin side
-        Task<MonjoFilteredResult<Gym>> GetAllGymsForAdminAsync(MonjoQuery query);
-        Task<Gym> AddGymByAdminAsync(AddGymByAdminUpdate update, string whois);
-        Task<Gym> EditGymByAdminAsync(EditGymByAdminUpdate update, string whois);
+        Task<MonjoFilteredResult<GymAdminResult>> GetAllGymsForAdminAsync(MonjoQuery query);
+        Task<GymAdminResult> AddGymByAdminAsync(AddGymByAdminUpdate update);
+        Task<GymAdminResult> EditGymByAdminAsync(EditGymByAdminUpdate update);
+        Task<GymAdminResult> RemoveGymByAdminAsync(GymIdUpdate gymIdUpdate);
 
 
-
+        // internal 
+        Task<Gym> GetOneGymForInternalUsageAsync(string gymId);
+        Task<bool> IsFacilityUsedAsync(string facilityId);
+        Task UpdateFacilityTitleAsync(string facilityId, string newTitle);
+        Task<bool> IsTrendUsedAsync(string trendId);
+        Task UpdateGymTrendTitleAsync(string trendId, string newTitle);
     }
 }

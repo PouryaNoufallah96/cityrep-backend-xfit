@@ -4,15 +4,10 @@ using XFit.Utilities.DTOs;
 
 namespace XFit.Services._Gym.DTOs.Updates
 {
-    public class GymFilter
+    public class GymFilter : GymSimpleFilter
     {
-        public Pagination Pagination { get; set; } = new();
         public GymNearestFilter? Nearest { get; set; } = null;
-        public List<Gender> Genders { get; set; } = [];
-        public List<GymLevel> GymLevels { get; set; } = [];
-        public List<string> GymTrendIds { get; set; } = [];
-        public List<string> FacilityIds { get; set; } = [];
-        public string Search { get; set; } = "";
+       
     }
 
 

@@ -6,11 +6,6 @@ namespace XFit.Utilities.MongoDatabase.Extensions
 {
     public static class MonjoPageExtensions
     {
-        public static IMongoQueryable<T> Apply<T>(this MonjoPage monjoPage, IMongoQueryable<T> query)
-        {
-            return monjoPage.Apply((IQueryable<T>)query).AsMongoQueryable();
-        }
-
         public static IQueryable<T> Apply<T>(this MonjoPage monjoPage, IQueryable<T> query)
         {
             if (monjoPage != null)
