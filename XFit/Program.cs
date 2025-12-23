@@ -1,7 +1,6 @@
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using RZPrime.Api.Utilities.Middlewares;
-using System.Text.Json.Serialization;
 using XFit.Utilities.Configuration;
 using XFit.Utilities.Configurations;
 var builder = WebApplication.CreateBuilder(args);
@@ -23,7 +22,6 @@ builder.Services.AddCodeAssistantSettings(builder.Configuration);
 builder.Services.AddSettings(builder.Configuration);
 
 
-
 builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
 builder.Host.ConfigureContainer<ContainerBuilder>(autofacConfigure =>
 {
@@ -32,21 +30,21 @@ builder.Host.ConfigureContainer<ContainerBuilder>(autofacConfigure =>
 
 });
 
-builder.Services.AddSignalR().AddJsonProtocol(options =>
-{
-    options.PayloadSerializerOptions.Converters
-       .Add(new JsonStringEnumConverter());
-});
+//builder.Services.AddSignalR().AddJsonProtocol(options =>
+//{
+//    options.PayloadSerializerOptions.Converters
+//       .Add(new JsonStringEnumConverter());
+//});
 
-builder.WebHost.UseSentry(o =>
-{
-    o.Dsn = "https://75d965371f5b8296e9b50d0df7f55eb4@o4510492345368576.ingest.de.sentry.io/4510526128193616";
-    o.TracesSampleRate = 1.0;
-    o.AttachStacktrace = true;
-    o.SendDefaultPii = true;
-    o.Debug = true;
-    o.IncludeActivityData = true;
-});
+//builder.WebHost.UseSentry(o =>
+//{
+//    o.Dsn = "https://75d965371f5b8296e9b50d0df7f55eb4@o4510492345368576.ingest.de.sentry.io/4510526128193616";
+//    o.TracesSampleRate = 1.0;
+//    o.AttachStacktrace = true;
+//    o.SendDefaultPii = true;
+//    o.Debug = true;
+//    o.IncludeActivityData = true;
+//});
 
 
 var app = builder.Build();
@@ -79,7 +77,6 @@ app.UseCustomRateLimiting();
 app.UseAuthorization();
 
 app.UseEndpoints();
-
 
 
 app.Run();

@@ -1,12 +1,13 @@
 ﻿using Microsoft.Extensions.Options;
+using XFit.Services._Gym.DTOs.Settings;
 
 namespace XFit.Utilities.Configurations
 {
     public static class ControllerServiceCollectionExtensions
     {
         public static void AddSettings(this IServiceCollection services, IConfiguration configuration)
-        {            
-
+        {
+            services.RegisterSetting<GymLevelSettings>(configuration.GetSection(nameof(GymLevelSettings)));
         }
 
         private static void RegisterSetting<TSettings>(this IServiceCollection services, IConfigurationSection configuration)

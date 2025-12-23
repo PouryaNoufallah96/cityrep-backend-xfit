@@ -21,28 +21,28 @@ namespace RZPrime.Api.Utilities.Middlewares
 
             var allowedOrigins = new[]
             {
-            "https://rzprime.com",
-            "https://api.rzprime.com",
-            "https://app.rzprime.com",
-            "https://mp.rzprime.com",
-            "http://localhost:5132",
-            "http://localhost:3000",
+            "https://x.com",
+            "https://api.x.com",
+            "https://app.x.com",
+            "https://mp.x.com",
+            "http://x:5132",
+            "http://x:3000",
             "http://192.168.100.5:3000",
             "null",
             ""
             };
 
-            if (!allowedOrigins.Contains(origin))
-            {
-                var requestPath = httpContext.Request.Path;
-                var clientIP = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown IP";
-                _logger.LogWarning("Blocked CORS request - Origin: {Origin}, Path: {Path}, IP: {IP}, Method: {Method}",
-                origin, requestPath, clientIP, httpContext.Request.Method);
+            //if (!allowedOrigins.Contains(origin))
+            //{
+            //    var requestPath = httpContext.Request.Path;
+            //    var clientIP = httpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown IP";
+            //    _logger.LogWarning("Blocked CORS request - Origin: {Origin}, Path: {Path}, IP: {IP}, Method: {Method}",
+            //    origin, requestPath, clientIP, httpContext.Request.Method);
 
-                httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
-                await httpContext.Response.WriteAsync("Access Denied");
-                return false;
-            }
+            //    httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
+            //    await httpContext.Response.WriteAsync("Access Denied");
+            //    return false;
+            //}
 
             httpContext.Response.Headers.Append("Access-Control-Allow-Origin", origin);
             httpContext.Response.Headers.Append("Access-Control-Allow-Credentials", "true");

@@ -14,13 +14,13 @@ namespace XFit.Services._Common.DTOs
     public class VerifyAndLoginWithVerificationCodeUpdate
     {
         [StringInputValidation(minLength: 11, maxLength: 11)] public required string PhoneNumber { get; set; }
-        [StringInputValidation(true, maxLength: 6, minLength: 6)] public required string VerificationCode { get; set; }
+        [StringInputValidation(true, maxLength: 4, minLength: 4)] public required string VerificationCode { get; set; }
 
         public required string ClientId { get; set; }
         public required string ClientSecret { get; set; }
 
-        public string CaptchaKey { get; set; }
-        public string CaptchaCode { get; set; }
+        public string CaptchaKey { get; set; } = null;
+        public string CaptchaCode { get; set; } = null;
     }
 
 

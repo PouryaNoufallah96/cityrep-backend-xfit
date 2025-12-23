@@ -12,13 +12,6 @@
 
 
 	<ItemGroup>
-    <Folder Include="_Rate\" />
-    <Folder Include="_Transactions\" />
-    <Folder Include="_Wallet\" />
-  </ItemGroup>
-
-
-	<ItemGroup>
 	  <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
 	</ItemGroup>
 

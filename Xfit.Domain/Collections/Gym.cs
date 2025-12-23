@@ -28,6 +28,7 @@ namespace Xfit.Domain.Collections
         public List<GymFacilityRef> Facilities { get; set; } = null;
 
         public decimal Rate { get; set; }
+        public decimal RateCount { get; set; } 
 
     }
 

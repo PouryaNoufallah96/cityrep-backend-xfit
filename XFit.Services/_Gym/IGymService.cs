@@ -34,5 +34,8 @@ namespace XFit.Services._Gym
         Task UpdateFacilityTitleAsync(string facilityId, string newTitle);
         Task<bool> IsTrendUsedAsync(string trendId);
         Task UpdateGymTrendTitleAsync(string trendId, string newTitle);
+
+        Task SyncRateOfGymAsync(string gymId);
+
     }
 }

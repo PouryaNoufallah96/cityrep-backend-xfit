@@ -1,23 +1,27 @@
-﻿using Xfit.Domain.Common;
-using XFit.Utilities.Attributes;
-using XFit.Utilities.MongoDatabase.Documents;
+﻿using Xfit.Domain.Collections;
+using Xfit.Domain.Common;
+using XFit.Services._Common.DTOs;
 
-namespace Xfit.Domain.Collections
+namespace XFit.Services._GymAttendance.DTOs
 {
-    [MonjoCollectionName("GymAttendances")]
-    public class GymAttendance : BaseDocument
+    public class GetClientGymAttendanceListResult 
     {
-        public string GymAttendanceId { get; set; } = Guid.NewGuid().ToString("N");
+        public List<GetClientGymAttendanceResult> Data { get; set; } = [];
+        public int PageCount { get; set; } = 0;
+        public int TotalCount { get; set; } = 0;
+    }
+
+
+    public class GetClientGymAttendanceResult : CommonResult
+    {
+        public string GymAttendanceId { get; set; } 
         public string GymAttendanceReference { get; set; }
         public string ClientPublicKey { get; set; }
 
-
-        // destination 
         public string GymId { get; set; }
         public string GymTitle { get; set; }
         public string GymTrendId { get; set; }
         public string GymTrendTitle { get; set; }
-        public string GymOwnerPublicKey { get; set; }
 
         public string Notes { get; set; }
         public GymLevel Level { get; set; }
@@ -30,5 +34,6 @@ namespace Xfit.Domain.Collections
         public decimal? GivenRate { get; set; } = null;
     }
 
-    public enum GymAttendanceState { Pending, Paid, Fail };
+
 }
+

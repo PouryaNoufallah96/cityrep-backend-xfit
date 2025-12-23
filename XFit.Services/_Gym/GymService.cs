@@ -21,6 +21,7 @@ namespace XFit.Services._Gym
     public class GymService(IGymRepository _gymRepository,
         IGymTrendRepository _gymTrendRepository,
         IRandomService randomService,
+        IGymAttendanceRepository _gymAttendanceRepository,
         IGymClosureRepository _gymClosureRepository,
         IGymFacilityRepository _gymFacilityRepository) : IGymService, IScopedDependency
     {
@@ -808,7 +809,7 @@ namespace XFit.Services._Gym
         public async Task<Gym> GetOneGymForInternalUsageAsync(string gymId)
         {
             var gym = await _gymRepository.AsQueryable().Where(q => q.GymId == gymId).FirstOrDefaultAsync() ??
-                throw new NotFoundException("Gym not found");
+                throw new NotFoundException("باشگاه یافت نشد");
 
             return gym;
         }
@@ -905,6 +906,49 @@ namespace XFit.Services._Gym
             }
         }
 
+
+
+        public async Task SyncRateOfGymAsync(string gymId)
+        {
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(gymId))
+                    throw new BadRequestException("شناسه باشگاه معتبر نیست");
+
+                var query = _gymAttendanceRepository.AsQueryable()
+                    .Where(x =>
+                        x.GymId == gymId &&
+                        x.PaymentState == GymAttendanceState.Paid &&
+                        x.GivenRate.HasValue
+                    );
+
+                var count = await query.CountAsync();
+
+                decimal averageRate = 0;
+
+                if (count > 0)
+                {
+                    averageRate = await query.AverageAsync(x => x.GivenRate!.Value);
+                }
+
+                var update = Builders<Gym>.Update
+                    .Set(x => x.Rate, Math.Round(averageRate, 2))
+                    .Set(x => x.RateCount, count);
+
+                var result = await _gymRepository.FindOneAndUpdateAsync(
+                    x => x.GymId == gymId,
+                    update
+                );
+            }
+            catch (Exception)
+            {
+                throw new BaseException("Error while syncing gym rate");
+            }
+           
+
+        }
+
         #endregion
 
 
@@ -970,6 +1014,6 @@ namespace XFit.Services._Gym
             return slug;
         }
 
-
+       
     }
 }
