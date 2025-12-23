@@ -14,6 +14,13 @@ namespace XFit.Utilities.Middlewares
         public async Task InvokeAsync(HttpContext context)
         {
 
+            if (
+                context.Request.Path.StartsWithSegments("/api/v1/File/DownloadFile"))
+            {
+                await _next(context);
+                return;
+            }
+
             var applicationId = context.Request.Headers["ApplicationId"].FirstOrDefault();
             var nonce = context.Request.Headers["Nonce"].FirstOrDefault();
             var signature = context.Request.Headers["Signature"].FirstOrDefault();

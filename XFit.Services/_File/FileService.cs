@@ -1,10 +1,10 @@
-﻿using CoinHalls.Services._File.DTOs.Settings;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using XFit.Utilities.Exceptions.Common;
 using static XFit.Utilities.Constants.RegisterMode;
 using XFit.Utilities.Services.Contracts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
+using XFit.Services._File.DTOs.Settings;
 
 namespace XFit.Services._File
 {
