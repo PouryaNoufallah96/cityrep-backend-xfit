@@ -1,7 +1,7 @@
 version: "3"
 services:
   xfit.metacoinguard.com:
-    image: xfit.metacoinguard.com
+    image: xfit.api
     container_name: xfit.metacoinguard.com
     restart: unless-stopped
     ports:

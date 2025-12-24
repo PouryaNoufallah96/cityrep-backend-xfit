@@ -3,26 +3,26 @@
 
 
 
-IMAGE_NAME="xfit.metacoinguard.com"
+IMAGE_NAME="xfit.api"
 CONTAINER_NAME="xfit.metacoinguard.com"
 
 
-echo "Building and publishing the project..."
+echo "---------Building and publishing the project..."
 dotnet build XFit/XFit.csproj -c Release
 dotnet publish XFit/XFit.csproj -c Release -o publish
 
-echo " Building Docker image..."
+echo "---------Building Docker image..."
 docker build -t $IMAGE_NAME .
 
-echo "Stopping old container if exists..."
+echo "---------Stopping old container if exists..."
 docker-compose down
 
 
-echo "Starting container..."
+echo "---------Starting container..."
 docker-compose up -d
 
 
-echo "Container status:"
+echo "---------Container status:"
 docker-compose ps
 
 echo "List of all containers:"
