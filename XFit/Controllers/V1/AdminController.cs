@@ -44,18 +44,18 @@ namespace XFit.Controllers.V1
             => await _adminService.ResetPasswordAsync(update);
 
 
-        public async Task<bool> CreateTempAdmin()
-        {
-            var newA = new Admin
-            { 
-                UserName = "superadmin",
-                PasswordHash = passwordService.Hash("12341234"),
-                Role= Xfit.Domain.Common.UserRole.Admin,
-                Status = Xfit.Domain.Common.UserStatus.Active
-            };
-            await adminRepository.InsertOneAsync(newA);
-            return true;
-        }
+        //public async Task<bool> CreateTempAdmin()
+        //{
+        //    var newA = new Admin
+        //    { 
+        //        UserName = "superadmin",
+        //        PasswordHash = passwordService.Hash("12341234"),
+        //        Role= Xfit.Domain.Common.UserRole.Admin,
+        //        Status = Xfit.Domain.Common.UserStatus.Active
+        //    };
+        //    await adminRepository.InsertOneAsync(newA);
+        //    return true;
+        //}
           
 
         #endregion
