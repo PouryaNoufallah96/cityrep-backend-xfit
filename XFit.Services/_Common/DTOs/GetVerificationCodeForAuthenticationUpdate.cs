@@ -31,7 +31,7 @@ namespace XFit.Services._Common.DTOs
 
     public class VerifyChangePhoneNumberUpdate
     {
-        [StringInputValidation(true, maxLength: 6, minLength: 6)] public required string VerificationCode { get; set; }
+        [StringInputValidation(true, maxLength: 4, minLength: 4)] public required string VerificationCode { get; set; }
 
         public string CaptchaKey { get; set; }
         public string CaptchaCode { get; set; }
