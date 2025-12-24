@@ -51,8 +51,9 @@ namespace XFit.Controllers.V1
         [CustomRateLimit]
         [HttpPost("[action]")]
         [SwaggerOperation(Summary = "Get gyms with filters", Tags = ["C-Gym"])]
-        public async Task<GymListResult> GetGymsWithFilterAsync(GymFilter update)
+        public async Task<GymListLightResult> GetGymsWithFilterAsync(GymFilter update)
             => await _gymService.GetGymsWithFilterAsync(update);
+
 
         [CustomRateLimit]
         [HttpPost("[action]")]

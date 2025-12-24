@@ -17,7 +17,7 @@ namespace XFit.Services._Gym
 
         //client
         Task<GymResult> GetOneGymAsync(GymIdUpdate update);
-        Task<GymListResult> GetGymsWithFilterAsync(GymFilter update);
+        Task<GymListLightResult> GetGymsWithFilterAsync(GymFilter update);
         Task<GymFullResult> GetGymDataBySlugAsync(string slug); 
 
 

@@ -421,9 +421,9 @@ namespace XFit.Services._Gym
         /// </summary>
         /// <param name="update"></param>
         /// <returns></returns>
-        public async Task<GymListResult> GetGymsWithFilterAsync(GymFilter update)
+        public async Task<GymListLightResult> GetGymsWithFilterAsync(GymFilter update)
         {
-            var result = new GymListResult();
+            var result = new GymListLightResult();
 
             var builder = Builders<Gym>.Filter;
             var filters = new List<FilterDefinition<Gym>>();
@@ -452,7 +452,7 @@ namespace XFit.Services._Gym
                 .Limit(size)
                 .ToListAsync();
 
-            result.Data = gyms.Select(g => new GymResult
+            result.Data = gyms.Select(g => new GymLightResult
             {
                 GymId = g.GymId,
                 Title = g.Title,
@@ -465,7 +465,6 @@ namespace XFit.Services._Gym
 
                 Contact = g.Contact,
                 Images = g.Images,
-                Trends = g.Trends,
                 Facilities = g.Facilities,
 
                 Rate = g.Rate,
@@ -579,18 +578,29 @@ namespace XFit.Services._Gym
 
             if (update.Nearest != null)
             {
-                var point = new GeoJsonPoint<GeoJson2DGeographicCoordinates>(
-                    new GeoJson2DGeographicCoordinates(
+                //var point = new GeoJsonPoint<GeoJson2DGeographicCoordinates>(
+                //    new GeoJson2DGeographicCoordinates(
+                //        update.Nearest.Longitude,
+                //        update.Nearest.Latitude
+                //    )
+                //);
+                //filters.Add(builder.Exists("Address.Location"));
+                //filters.Add(builder.Near(
+                //    g => g.Address.Location,
+                //    point,
+                //    update.Nearest.MaxDistanceMeters
+                //));
+
+                filters.Add(builder.Exists(g => g.Address.Location));
+
+                filters.Add(
+                    builder.GeoWithinCenterSphere(
+                        g => g.Address.Location,
                         update.Nearest.Longitude,
-                        update.Nearest.Latitude
+                        update.Nearest.Latitude,
+                        update.Nearest.MaxDistanceMeters / 6378137.0
                     )
                 );
-                filters.Add(builder.Exists("Address.Location"));
-                filters.Add(builder.Near(
-                    g => g.Address.Location,
-                    point,
-                    update.Nearest.MaxDistanceMeters
-                ));
             }
 
             ManageGymListSimpleFilters(update, builder, filters);
