@@ -66,6 +66,7 @@ namespace XFit.Services._Gym
                 Province = update.Province,
                 City = update.City,
                 PostalCode = update.PostalCode,
+                GeoLocation = update.GeoLocation,
                 Location = new GeoJsonPoint<GeoJson2DGeographicCoordinates>(
                      new GeoJson2DGeographicCoordinates(update.GeoLocation.Longitude, update.GeoLocation.Latitude)
                      )

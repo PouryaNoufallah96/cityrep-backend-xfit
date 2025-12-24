@@ -1,4 +1,5 @@
 ﻿using MongoDB.Driver.GeoJsonObjectModel;
+using System.Text.Json.Serialization;
 
 namespace Xfit.Domain.Common
 {
@@ -7,21 +8,27 @@ namespace Xfit.Domain.Common
     public class AddressInfo
     {
         //public GeoLocation? Location { get; set; } = null; //[ Longitude , Latitude ]
-        public GeoJsonPoint<GeoJson2DGeographicCoordinates>? Location { get; set; }
-        public string Province { get; set; }
+        [JsonIgnore]public GeoJsonPoint<GeoJson2DGeographicCoordinates> Location { get; set; }
+        public GeoLocation GeoLocation { get; set; }
+        public string Province { get; set; } 
         public string City { get; set; }
         public string Address { get; set; }
         public string PostalCode { get; set; }
     }
 
-  
+    public class GeoLocation
+    {
+
+        public double Longitude { get; set; }
+        public double Latitude { get; set; }
+    }
 
     //    db.Gyms.createIndex({
     //  "Address.Location": "2dsphere"
     //})
 
-//    db.Gyms.createIndex(
-//  { "Address.Location": "2dsphere" },
-//  { partialFilterExpression: { "Address.Location": { $exists: true } } }
-//)
+    //    db.Gyms.createIndex(
+    //  { "Address.Location": "2dsphere" },
+    //  { partialFilterExpression: { "Address.Location": { $exists: true } } }
+    //)
 }

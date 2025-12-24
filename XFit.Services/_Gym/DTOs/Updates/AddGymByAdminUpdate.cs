@@ -22,15 +22,12 @@ namespace XFit.Services._Gym.DTOs.Updates
         public string City { get; set; }
         public string Address { get; set; }
         public string PostalCode { get; set; }
+        //public double Longitude { get; set; }
+        //public double Latitude { get; set; }
         public GeoLocation GeoLocation { get; set; }
     }
      
-    public class GeoLocation
-    {
-
-        public double Longitude { get; set; }
-        public double Latitude { get; set; }
-    }
+ 
 
     public class EditGymUpdate : AddGymUpdate
     {
