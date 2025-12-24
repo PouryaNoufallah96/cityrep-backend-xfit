@@ -214,7 +214,7 @@ namespace XFit.Services._Client
 
             await _clientRepository.ReplaceOneAsync(client);
 
-            await _smsService.SendVerificationMessageAsync(newPhoneNumber, verificationCode);
+            //await _smsService.SendVerificationMessageAsync(newPhoneNumber, verificationCode);
             return true;
         }
 

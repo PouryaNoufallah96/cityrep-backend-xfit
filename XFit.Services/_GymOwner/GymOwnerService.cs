@@ -215,7 +215,7 @@ namespace XFit.Services._GymOwner
 
             await _gymOwnerRepository.ReplaceOneAsync(gymOwner);
 
-            await _smsService.SendVerificationMessageAsync(newPhoneNumber, verificationCode);
+            //await _smsService.SendVerificationMessageAsync(newPhoneNumber, verificationCode);
             return true;
         }
 
