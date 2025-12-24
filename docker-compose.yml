@@ -1,8 +1,8 @@
 version: "3"
 services:
-  api.x.com:
-    image: x.api
-    container_name: api.x.com
+  xfit.metacoinguard.com:
+    image: xfit.metacoinguard.com
+    container_name: xfit.metacoinguard.com
     restart: unless-stopped
     ports:
       - "127.0.0.1:3002:80"
