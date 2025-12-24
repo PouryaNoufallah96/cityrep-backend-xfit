@@ -8,12 +8,28 @@ namespace XFit.Services._Gym.DTOs.Updates
         public string Title { get; set; }
         public string Description { get; set; }
         public GymLevel Level { get; set; }
-        public AddressInfo Address { get; set; }
+        public AddressInfoUpdate Address { get; set; } 
         public Contact Contact { get; set; } = null;
         public List<GymImage> Images { get; set; } = null;
         public List<GymTrendInfoUpdate> Trends { get; set; } = null;
         public List<string> FacilityIds { get; set; } = null;
 
+    }
+
+    public class AddressInfoUpdate
+    {
+        public string Province { get; set; }
+        public string City { get; set; }
+        public string Address { get; set; }
+        public string PostalCode { get; set; }
+        public GeoLocation GeoLocation { get; set; }
+    }
+     
+    public class GeoLocation
+    {
+
+        public double Longitude { get; set; }
+        public double Latitude { get; set; }
     }
 
     public class EditGymUpdate : AddGymUpdate

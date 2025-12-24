@@ -41,7 +41,7 @@ namespace XFit.Services._Gym
                 Title = update.Title.Trim(),
                 Description = update.Description.Trim(),
                 Level = update.Level,
-                Address = update.Address,
+                Address = CreateAddressInfo(update.Address),
                 Contact = update.Contact,
                 Images = update.Images,
                 State = GymState.NotVerified,
@@ -55,6 +55,22 @@ namespace XFit.Services._Gym
 
             await _gymRepository.InsertOneAsync(newGym);
             return ConvertToResult(newGym);
+        }
+
+
+        private AddressInfo CreateAddressInfo(AddressInfoUpdate update)
+        {
+            var address = new AddressInfo
+            {
+                Address = update.Address,
+                Province = update.Province,
+                City = update.City,
+                PostalCode = update.PostalCode,
+                Location = new GeoJsonPoint<GeoJson2DGeographicCoordinates>(
+                     new GeoJson2DGeographicCoordinates(update.GeoLocation.Longitude, update.GeoLocation.Latitude)
+                     )
+            };
+            return address;
         }
 
 
@@ -116,7 +132,7 @@ namespace XFit.Services._Gym
         }
 
 
-       
+
 
         /// <summary>
         /// this method use for build gender working hours
@@ -292,7 +308,7 @@ namespace XFit.Services._Gym
 
             gym.Description = update.Description.Trim();
             gym.Level = update.Level;
-            gym.Address = update.Address;
+            gym.Address = CreateAddressInfo(update.Address);
             gym.Contact = update.Contact;
             gym.Images = update.Images;
 
@@ -945,7 +961,7 @@ namespace XFit.Services._Gym
             {
                 throw new BaseException("Error while syncing gym rate");
             }
-           
+
 
         }
 
@@ -1014,6 +1030,6 @@ namespace XFit.Services._Gym
             return slug;
         }
 
-       
+
     }
 }

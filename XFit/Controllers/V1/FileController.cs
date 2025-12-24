@@ -14,7 +14,6 @@ namespace XFit.Controllers.V1
     public class FileController(IFileService _fileService) : ApiBaseController
     {
         [HttpGet("[action]/{fileName}")]
-        //[IgnoreSignatureAttribute]
         public async Task<IActionResult> DownloadFileAsync([FromRoute] string fileName)
         {
             var memory = await _fileService.GetFileAsync(fileName);
@@ -29,7 +28,6 @@ namespace XFit.Controllers.V1
         //[Authorize]
         public async Task<string> UploadFileAsync([FromQuery] string fileName, IFormFile file)
         {
-            //if (WalletAddress.ToLower() != "admin wallet") throw new BadRequestException("you can not upload game image");
             return await _fileService.UploadFileAsync(fileName, file);
         }
 
@@ -38,7 +36,6 @@ namespace XFit.Controllers.V1
         //[Authorize]
         public bool DeleteFile([FromRoute] string fileName)
         {
-            //if (WalletAddress.ToLower() != "admin wallet") throw new BadRequestException("you can not remove game image");
             return _fileService.DeleteFile(fileName);
         }
     }

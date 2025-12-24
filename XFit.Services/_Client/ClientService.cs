@@ -288,7 +288,7 @@ namespace XFit.Services._Client
             client.FullName = update.FullName?.Trim();
             client.BirthDay = update.BirthDay.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc); 
             client.Gender = update.Gender;
-            client.Address = new AddressInfo
+            client.Address = new ClientAddressInfo
             {
                 Province = update.Provice,
                 City = update.City,
