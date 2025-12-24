@@ -16,7 +16,7 @@ namespace XFit.Utilities.Services
 {
     public class JwtService(JwtServiceSettings _settings) : IJwtService, ISingletonDependency
     {
-        public AccessToken Generate(IEnumerable<Claim> claims)
+        public AccessToken Generate(IEnumerable<Claim> claims, bool hasProfile = false)
         {
             var signatureKey = Encoding.UTF8.GetBytes(_settings.SignatureKey); // longer than 16 character
             var signingCredentials = new SigningCredentials(new SymmetricSecurityKey(signatureKey),
@@ -43,7 +43,7 @@ namespace XFit.Utilities.Services
             var securityToken = tokenHandler.CreateJwtSecurityToken(descriptor);
 
 
-            return new AccessToken(securityToken);
+            return new AccessToken(securityToken,hasProfile);
         }
 
         public JwtSecurityToken Validate(string token)
@@ -74,7 +74,7 @@ namespace XFit.Utilities.Services
             return (JwtSecurityToken)validatedToken;
         }
 
-        public ActionResult Authenticate(string publicKey, string role, string phoneNumber, IEnumerable<string> permissions, string securityStamp)
+        public ActionResult Authenticate(string publicKey, string role, string phoneNumber, IEnumerable<string> permissions, string securityStamp ,bool HasProfile = false)
               => new JsonResult(Generate(GetClaimsAsync(publicKey, role, phoneNumber, permissions, securityStamp)));
 
         #region Private Methods
@@ -112,11 +112,14 @@ namespace XFit.Utilities.Services
         public string token_type { get; set; }
         public int expires_in { get; set; }
 
-        public AccessToken(JwtSecurityToken securityToken)
+        public bool HasProfile { get; set; } = false;
+
+        public AccessToken(JwtSecurityToken securityToken,bool hasProfile)
         {
             access_token = new JwtSecurityTokenHandler().WriteToken(securityToken);
             token_type = "Bearer";
             expires_in = (int)(securityToken.ValidTo - DateTime.UtcNow).TotalSeconds;
+            HasProfile = hasProfile;
         }
     }
 

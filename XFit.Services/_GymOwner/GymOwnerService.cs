@@ -62,19 +62,16 @@ namespace XFit.Services._GymOwner
                 if (gymOwner.VerificationCodeSentMoment == null ||
                     gymOwner.VerificationCodeSentMoment.Value.AddMinutes(10) < now)
                 {
-                    gymOwner.VerificationCode = _randomService.GetSecureNumericString(6);
+                    //gymOwner.VerificationCode = _randomService.GetSecureNumericString(4);
+                    gymOwner.VerificationCode = "1234";
                     gymOwner.VerificationCodeSentMoment = now;
 
                     await _gymOwnerRepository.ReplaceOneAsync(gymOwner);
 
-                    //TODO : uncomment
-                    //await _smsService.SendVerificationMessageAsync(user.PhoneNumber, user.VerificationCode);
-
-                    return true;
                 }
 
                 // TODO:UnComment
-                await _smsService.SendVerificationMessageAsync(gymOwner.PhoneNumber, gymOwner.VerificationCode);
+                //await _smsService.SendVerificationMessageAsync(gymOwner.PhoneNumber, gymOwner.VerificationCode);
                 return true;
             }
             catch (BadRequestException ex)
@@ -131,6 +128,7 @@ namespace XFit.Services._GymOwner
 
                 gymOwner.VerificationCode = null;
                 gymOwner.WrongVerificationTryCount = 0;
+                gymOwner.VerificationCodeSentMoment = null;
 
                 if (gymOwner.Status == UserStatus.NotVerified)
                     gymOwner.Status = UserStatus.Active;
@@ -138,7 +136,7 @@ namespace XFit.Services._GymOwner
                 await _gymOwnerRepository.ReplaceOneAsync(gymOwner);
                 await _walletService.InitWalletAsync(gymOwner.PublicKey, UserRole.GymOwner);
 
-                return _jwtService.Authenticate(gymOwner.PublicKey, "GymOwner", gymOwner.PhoneNumber, gymOwner.Permissions, gymOwner.SecurityStamp);
+                return _jwtService.Authenticate(gymOwner.PublicKey, "GymOwner", gymOwner.PhoneNumber, gymOwner.Permissions, gymOwner.SecurityStamp,gymOwner.FullName.HasValue());
             }
             catch (BadRequestException ex)
             {
@@ -172,7 +170,7 @@ namespace XFit.Services._GymOwner
                 if (gymOwner.Status == UserStatus.Ban)
                     throw new BadRequestException(ExceptionMessages.UserIsBan);
 
-                return _jwtService.Authenticate(gymOwner.PublicKey, role, gymOwner.PhoneNumber, gymOwner.Permissions, gymOwner.SecurityStamp);
+                return _jwtService.Authenticate(gymOwner.PublicKey, role, gymOwner.PhoneNumber, gymOwner.Permissions, gymOwner.SecurityStamp,gymOwner.FullName.HasValue());
             }
             catch (BadRequestException ex)
             {

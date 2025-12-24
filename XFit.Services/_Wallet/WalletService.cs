@@ -59,6 +59,8 @@ namespace XFit.Services._Wallet
         {
             try
             {
+                if (await _walletRepository.ExistsAsync(q => q.PublicKey == publicKey && q.Role == userRole)) return;
+
                 var wallet = new Wallet
                 {
                     WalletId = publicKey,

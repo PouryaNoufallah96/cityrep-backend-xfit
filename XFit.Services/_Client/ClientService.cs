@@ -62,19 +62,17 @@ namespace XFit.Services._Client
                 if (client.VerificationCodeSentMoment == null ||
                     client.VerificationCodeSentMoment.Value.AddMinutes(10) < now)
                 {
-                    client.VerificationCode = _randomService.GetSecureNumericString(6);
+                    //client.VerificationCode = _randomService.GetSecureNumericString(4);
+                    client.VerificationCode = "1234";
                     client.VerificationCodeSentMoment = now;
 
                     await _clientRepository.ReplaceOneAsync(client);
 
-                    //TODO : uncomment
-                    //await _smsService.SendVerificationMessageAsync(user.PhoneNumber, user.VerificationCode);
-
-                    return true;
+               
                 }
 
                 // TODO:UnComment
-                await _smsService.SendVerificationMessageAsync(client.PhoneNumber, client.VerificationCode);
+                //await _smsService.SendVerificationMessageAsync(client.PhoneNumber, client.VerificationCode);
                 return true;
             }
             catch (BadRequestException ex)
@@ -131,13 +129,14 @@ namespace XFit.Services._Client
 
                 client.VerificationCode = null;
                 client.WrongVerificationTryCount = 0;
+                client.VerificationCodeSentMoment = null;
 
                 if (client.Status == UserStatus.NotVerified)
                     client.Status = UserStatus.Active;
                 client = AddLoginDateToUser(client);
                 await _clientRepository.ReplaceOneAsync(client);
                 await _walletService.InitWalletAsync(client.PublicKey, UserRole.Client);
-                return _jwtService.Authenticate(client.PublicKey, "Client", client.PhoneNumber, client.Permissions, client.SecurityStamp);
+                return _jwtService.Authenticate(client.PublicKey, "Client", client.PhoneNumber, client.Permissions, client.SecurityStamp,client.FullName.HasValue());
             }
             catch (BadRequestException ex)
             {
@@ -171,7 +170,7 @@ namespace XFit.Services._Client
                 if (client.Status == UserStatus.Ban)
                     throw new BadRequestException(ExceptionMessages.UserIsBan);
 
-                return _jwtService.Authenticate(client.PublicKey, role, client.PhoneNumber, client.Permissions, client.SecurityStamp);
+                return _jwtService.Authenticate(client.PublicKey, role, client.PhoneNumber, client.Permissions, client.SecurityStamp,client.FullName.HasValue());
             }
             catch (BadRequestException ex)
             {
