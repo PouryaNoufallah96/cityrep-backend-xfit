@@ -3,8 +3,8 @@
 
 
 
-IMAGE_NAME="xfit.api"
-CONTAINER_NAME="api.xfit.com"
+IMAGE_NAME="xfit.metacoinguard.com"
+CONTAINER_NAME="xfit.metacoinguard.com"
 
 
 echo "Building and publishing the project..."
