@@ -27,7 +27,7 @@ namespace XFit.Controllers.V1
             lockoutDurationMinutes: 5)]
         [SwaggerOperation(
             Summary = "Admin login",
-            Tags = ["AdminAuth"])]
+            Tags = ["A-Auth"])]
         public async Task<ActionResult> LoginAsync(
             LoginUpdate update)
             => await _adminService.LoginAsync(update);
@@ -38,25 +38,26 @@ namespace XFit.Controllers.V1
         [CustomRateLimit]
         [SwaggerOperation(
             Summary = "Reset user password by admin",
-            Tags = ["Admin"])]
+            Tags = ["A-Profile"])]
         public async Task<bool> ResetPasswordAsync(
             ResetPasswordUpdate update)
             => await _adminService.ResetPasswordAsync(update);
 
-
+        //[HttpPut("[action]")]
+        ////[Authorize]
         //public async Task<bool> CreateTempAdmin()
         //{
         //    var newA = new Admin
-        //    { 
-        //        UserName = "superadmin",
+        //    {
+        //        UserName = "master",
         //        PasswordHash = passwordService.Hash("12341234"),
-        //        Role= Xfit.Domain.Common.UserRole.Admin,
+        //        Role = Xfit.Domain.Common.UserRole.Admin,
         //        Status = Xfit.Domain.Common.UserStatus.Active
         //    };
         //    await adminRepository.InsertOneAsync(newA);
         //    return true;
         //}
-          
+
 
         #endregion
     }

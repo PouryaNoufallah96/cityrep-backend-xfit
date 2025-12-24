@@ -26,7 +26,7 @@ namespace XFit.Controllers.V1
             lockoutDurationMinutes: 5)]
         [SwaggerOperation(
             Summary = "Request a verification code for authentication",
-            Tags = ["ClientAuth"])]
+            Tags = ["C-Auth"])]
         public async Task<bool> GetVerificationCodeForAuthenticationAsync(
             GetVerificationCodeForAuthenticationUpdate update)
             => await _clientService.GetVerificationCodeForAuthenticationAsync(update);
@@ -39,7 +39,7 @@ namespace XFit.Controllers.V1
             lockoutDurationMinutes: 5)]
         [SwaggerOperation(
             Summary = "Login using the verification code sent to the client",
-            Tags = ["ClientAuth"])]
+            Tags = ["C-Auth"])]
         public async Task<ActionResult> VerifyAndLoginWithVerificationCodeAsync(
             VerifyAndLoginWithVerificationCodeUpdate update)
             => await _clientService.VerifyAndLoginWithVerificationCodeAsync(update);
@@ -50,7 +50,7 @@ namespace XFit.Controllers.V1
         [Authorize]
         [SwaggerOperation(
             Summary = "Renew client access token",
-            Tags = ["ClientAuth"])]
+            Tags = ["C-Auth"])]
         public async Task<ActionResult> RenewTokenAsync()
             => await _clientService.RenewTokenAsync(
                 JwtToken.ToString(),
@@ -67,7 +67,7 @@ namespace XFit.Controllers.V1
         [Authorize]
         [SwaggerOperation(
             Summary = "Get authenticated client profile",
-            Tags = ["ClientProfile"])]
+            Tags = ["C-Profile"])]
         public async Task<ClientResult> GetClientDataAsync()
             => await _clientService.GetClientDataAsync(PublicKey);
 
@@ -77,7 +77,7 @@ namespace XFit.Controllers.V1
         [Authorize]
         [SwaggerOperation(
             Summary = "Create or update client profile data",
-            Tags = ["ClientProfile"])]
+            Tags = ["C-Profile"])]
         public async Task<ClientResult> UpsertProfileDataAsync(
             ClientProfileDataUpdate update)
             => await _clientService.UpsertProfileDataAsync(update, PublicKey);
@@ -88,7 +88,7 @@ namespace XFit.Controllers.V1
         [Authorize]
         [SwaggerOperation(
             Summary = "Request to change client phone number",
-            Tags = ["ClientProfile"])]
+            Tags = ["C-Profile"])]
         public async Task<bool> RequestChangePhoneNumberAsync(
             ChangePhoneNumberUpdate update)
             => await _clientService.RequestChangePhoneNumberAsync(update, PublicKey);
@@ -99,7 +99,7 @@ namespace XFit.Controllers.V1
         [Authorize]
         [SwaggerOperation(
             Summary = "Verify client phone number change request",
-            Tags = ["ClientProfile"])]
+            Tags = ["C-Profile"])]
         public async Task<bool> VerifyChangePhoneNumberAsync(
             VerifyChangePhoneNumberUpdate update)
             => await _clientService.VerifyChangePhoneNumberAsync(update, PublicKey);

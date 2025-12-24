@@ -2,12 +2,13 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.Annotations;
 using Swashbuckle.AspNetCore.Filters;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using System.Reflection;
-using XFit.Utilities.Utilities;
 using XFit.Utilities.Swagger;
+using XFit.Utilities.Utilities;
 
 
 namespace XFit.Utilities.Configuration
@@ -27,6 +28,18 @@ namespace XFit.Utilities.Configuration
                 options.IgnoreObsoleteProperties();
                 options.UseInlineDefinitionsForEnums();
                 options.ExampleFilters();
+
+                options.TagActionsBy(api =>
+                {
+                    var swaggerOperation = api.CustomAttributes()
+                        .OfType<SwaggerOperationAttribute>()
+                        .FirstOrDefault();
+
+                    if (swaggerOperation?.Tags?.Any() == true)
+                        return swaggerOperation.Tags;
+
+                    return new[] { api.ActionDescriptor.RouteValues["controller"] };
+                });
 
                 options.SwaggerDoc("v1", new OpenApiInfo { Version = "v1", Title = "API V1" });
                 options.SwaggerDoc("v2", new OpenApiInfo { Version = "v2", Title = "API V2" });

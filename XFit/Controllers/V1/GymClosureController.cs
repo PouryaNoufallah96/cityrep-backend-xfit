@@ -21,35 +21,35 @@ namespace XFit.Controllers.V1
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
-        [SwaggerOperation(Summary = "Create a gym closure", Tags = new[] { "Gym Closure Owner" })]
+        [SwaggerOperation(Summary = "Create a gym closure", Tags = new[] { "GO-GymClosure" })]
         public async Task<GymClosureResult> CreateAsync(GymClosureCreateUpdate dto)
             => await _gymClosureService.CreateAsync(dto, PublicKey);
 
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
-        [SwaggerOperation(Summary = "Edit a gym closure", Tags = new[] { "Gym Closure Owner" })]
+        [SwaggerOperation(Summary = "Edit a gym closure", Tags = new[] { "GO-GymClosure" })]
         public async Task<GymClosureResult> UpdateAsync(GymClosureEditUpdate dto)
             => await _gymClosureService.UpdateAsync(dto, PublicKey);
 
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
-        [SwaggerOperation(Summary = "Remove a gym closure", Tags = new[] { "Gym Closure Owner" })]
+        [SwaggerOperation(Summary = "Remove a gym closure", Tags = new[] { "GO-GymClosure" })]
         public async Task<GymClosureResult> DeleteAsync(RemoveGymClosureUpdate dto)
             => await _gymClosureService.DeleteAsync(dto, PublicKey);
 
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
-        [SwaggerOperation(Summary = "Get a gym closure by id", Tags = new[] { "Gym Closure Owner" })]
+        [SwaggerOperation(Summary = "Get a gym closure by id", Tags = new[] { "GO-GymClosure" })]
         public async Task<GymClosureResult> GetOneByIdAsync(GymClosureIdUpdate dto)
             => await _gymClosureService.GetOneByIdAsync(dto);
 
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
-        [SwaggerOperation(Summary = "Get list of closures for gym owner", Tags = new[] { "Gym Closure Owner" })]
+        [SwaggerOperation(Summary = "Get list of closures for gym owner", Tags = new[] { "GO-GymClosure" })]
         public async Task<GymClosureListResult> GetListForGymOwnerAsync(GymClosureListUpdate dto)
             => await _gymClosureService.GetListForGymOwnerAsync(dto, PublicKey);
 
@@ -62,35 +62,35 @@ namespace XFit.Controllers.V1
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
-        [SwaggerOperation(Summary = "Create a gym closure by admin", Tags = new[] { "Gym Closure Admin" })]
+        [SwaggerOperation(Summary = "Create a gym closure by admin", Tags = new[] { "A-GymClosure" })]
         public async Task<GymClosureForAdminResult> CreateByAdminAsync(GymClosureCreateForAdminUpdate dto)
             => await _gymClosureService.CreateByAdminAsync(dto);
 
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
-        [SwaggerOperation(Summary = "Edit a gym closure by admin", Tags = new[] { "Gym Closure Admin" })]
+        [SwaggerOperation(Summary = "Edit a gym closure by admin", Tags = new[] { "A-GymClosure" })]
         public async Task<GymClosureForAdminResult> UpdateByAdminAsync(GymClosureEditForAdminUpdate dto)
             => await _gymClosureService.UpdateByAdminAsync(dto);
 
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
-        [SwaggerOperation(Summary = "Remove a gym closure by admin", Tags = new[] { "Gym Closure Admin" })]
+        [SwaggerOperation(Summary = "Remove a gym closure by admin", Tags = new[] { "A-GymClosure" })]
         public async Task<GymClosureForAdminResult> DeleteByAdminAsync(RemoveGymClosureForAdminUpdate dto)
             => await _gymClosureService.DeleteByAdminAsync(dto);
 
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
-        [SwaggerOperation(Summary = "Get a gym closure by id by admin", Tags = new[] { "Gym Closure Admin" })]
+        [SwaggerOperation(Summary = "Get a gym closure by id by admin", Tags = new[] { "A-GymClosure" })]
         public async Task<GymClosureForAdminResult> GetOneByIdByAdminAsync(GymClosureIdUpdate dto)
             => await _gymClosureService.GetOneByIdByAdminAsync(dto);
 
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
-        [SwaggerOperation(Summary = "Get list of gym closures for admin", Tags = new[] { "Gym Closure Admin" })]
+        [SwaggerOperation(Summary = "Get list of gym closures for admin", Tags = new[] { "A-GymClosure" })]
         public async Task<MonjoFilteredResult<GymClosureForAdminResult>> GetListForAdminAsync(MonjoQuery query)
             => await _gymClosureService.GetListForAdminAsync(query);
 

@@ -27,7 +27,7 @@ namespace XFit.Controllers.V1
             lockoutDurationMinutes: 5)]
         [SwaggerOperation(
             Summary = "Request a verification code for gym owner authentication",
-            Tags = ["GymOwnerAuth"])]
+            Tags = ["GO-Auth"])]
         public async Task<bool> GetVerificationCodeForAuthenticationAsync(
             GetVerificationCodeForAuthenticationUpdate update)
             => await _gymOwnerService.GetVerificationCodeForAuthenticationAsync(update);
@@ -40,7 +40,7 @@ namespace XFit.Controllers.V1
             lockoutDurationMinutes: 5)]
         [SwaggerOperation(
             Summary = "Login gym owner using verification code",
-            Tags = ["GymOwnerAuth"])]
+            Tags = ["GO-Auth"])]
         public async Task<ActionResult> VerifyAndLoginWithVerificationCodeAsync(
             VerifyAndLoginWithVerificationCodeUpdate update)
             => await _gymOwnerService.VerifyAndLoginWithVerificationCodeAsync(update);
@@ -51,7 +51,7 @@ namespace XFit.Controllers.V1
         [Authorize]
         [SwaggerOperation(
             Summary = "Renew gym owner access token",
-            Tags = ["GymOwnerAuth"])]
+            Tags = ["GO-Auth"])]
         public async Task<ActionResult> RenewTokenAsync()
             => await _gymOwnerService.RenewTokenAsync(
                 JwtToken.ToString(),
@@ -68,7 +68,7 @@ namespace XFit.Controllers.V1
         [Authorize]
         [SwaggerOperation(
             Summary = "Get authenticated gym owner profile",
-            Tags = ["GymOwnerProfile"])]
+            Tags = ["GO-Profile"])]
         public async Task<GymOwnerResult> GetGymOnwerDataAsync()
             => await _gymOwnerService.GetGymOnwerDataAsync(PublicKey);
 
@@ -78,7 +78,7 @@ namespace XFit.Controllers.V1
         [Authorize]
         [SwaggerOperation(
             Summary = "Create or update gym owner profile data",
-            Tags = ["GymOwnerProfile"])]
+            Tags = ["GO-Profile"])]
         public async Task<GymOwnerResult> UpsertProfileDataAsync(
             GymOwnerProfileDataUpdate update)
             => await _gymOwnerService.UpsertProfileDataAsync(update, PublicKey);
@@ -89,7 +89,7 @@ namespace XFit.Controllers.V1
         [Authorize]
         [SwaggerOperation(
             Summary = "Create or update gym owner identity documents",
-            Tags = ["GymOwnerProfile"])]
+            Tags = ["GO-Profile"])]
         public async Task<GymOwnerResult> UpsertIdentityDocumentsAsync(
             GymOwnerProfileIdentityDocumenDataUpdate update)
             => await _gymOwnerService.UpsertIdentityDocumentsAsync(update, PublicKey);
@@ -100,7 +100,7 @@ namespace XFit.Controllers.V1
         [Authorize]
         [SwaggerOperation(
             Summary = "Request to change gym owner phone number",
-            Tags = ["GymOwnerProfile"])]
+            Tags = ["GO-Profile"])]
         public async Task<bool> RequestChangePhoneNumberAsync(
             ChangePhoneNumberUpdate update)
             => await _gymOwnerService.RequestChangePhoneNumberAsync(update, PublicKey);
@@ -111,7 +111,7 @@ namespace XFit.Controllers.V1
         [Authorize]
         [SwaggerOperation(
             Summary = "Verify gym owner phone number change request",
-            Tags = ["GymOwnerProfile"])]
+            Tags = ["GO-Profile"])]
         public async Task<bool> VerifyChangePhoneNumberAsync(
             VerifyChangePhoneNumberUpdate update)
             => await _gymOwnerService.VerifyChangePhoneNumberAsync(update, PublicKey);

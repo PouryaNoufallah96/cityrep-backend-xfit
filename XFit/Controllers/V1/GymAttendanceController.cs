@@ -23,21 +23,21 @@ namespace XFit.Controllers.V1
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
-        [SwaggerOperation(Summary = "Create gym attendance by client", Tags = ["GymAttendance  Client"])]
+        [SwaggerOperation(Summary = "Create gym attendance by client", Tags = ["C-Attendance"])]
         public async Task<string> CreateByClientAsync(CreateGymAttendanceUpdate update)
             => await _gymAttendanceService.CreateGymAttendanceByClientAsync(update, PublicKey);
 
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
-        [SwaggerOperation(Summary = "Get client gym attendance list", Tags = ["GymAttendance  Client"])]
+        [SwaggerOperation(Summary = "Get client gym attendance list", Tags = ["C-Attendance"])]
         public async Task<GetClientGymAttendanceListResult> GetClientListAsync(GetClientGymAttendanceListUpdate update)
             => await _gymAttendanceService.GetClientGymAttendanceListAsync(update, PublicKey);
 
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
-        [SwaggerOperation(Summary = "Add or update rate for gym attendance", Tags = ["GymAttendance  Client"])]
+        [SwaggerOperation(Summary = "Add or update rate for gym attendance", Tags = ["C-Attendance"])]
         public async Task<bool> UpsertRateAsync(AddRateUpdate update)
             => await _gymAttendanceService.UpsertRateToAttendanceAsync(update, PublicKey);
 
@@ -49,14 +49,14 @@ namespace XFit.Controllers.V1
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
-        [SwaggerOperation(Summary = "Verify gym attendance by gym owner", Tags = ["GymAttendance  GymOwner"])]
+        [SwaggerOperation(Summary = "Verify gym attendance by gym owner", Tags = ["GO-Attendance"])]
         public async Task<bool> VerifyByGymOwnerAsync(VerifyGymAttendaceByGymOwnerUpdate update)
             => await _gymAttendanceService.VerifyGymAttendaceByGymOwnerAsync(update, PublicKey);
 
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
-        [SwaggerOperation(Summary = "Get gym owner attendance list", Tags = ["GymAttendance  GymOwner"])]
+        [SwaggerOperation(Summary = "Get gym owner attendance list", Tags = ["GO-Attendance"])]
         public async Task<GetGymOwnerGymAttendanceListResult> GetGymOwnerListAsync(GetGymOwnerGymAttendanceListUpdate update)
             => await _gymAttendanceService.GetGymOwnerGymAttendanceListAsync(update, PublicKey);
 
@@ -68,7 +68,7 @@ namespace XFit.Controllers.V1
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
-        [SwaggerOperation(Summary = "Get all gym attendances for admin", Tags = ["GymAttendance  Admin"])]
+        [SwaggerOperation(Summary = "Get all gym attendances for admin", Tags = ["A-Attendance"])]
         public async Task<MonjoFilteredResult<GetGymOwnerGymAttendanceResult>> GetAllForAdminAsync(MonjoQuery query)
             => await _gymAttendanceService.GetAllForAdminAsync(query);
 
