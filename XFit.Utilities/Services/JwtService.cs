@@ -75,7 +75,7 @@ namespace XFit.Utilities.Services
         }
 
         public ActionResult Authenticate(string publicKey, string role, string phoneNumber, IEnumerable<string> permissions, string securityStamp ,bool HasProfile = false)
-              => new JsonResult(Generate(GetClaimsAsync(publicKey, role, phoneNumber, permissions, securityStamp)));
+              => new JsonResult(Generate(GetClaimsAsync(publicKey, role, phoneNumber, permissions, securityStamp), HasProfile));
 
         #region Private Methods
 
