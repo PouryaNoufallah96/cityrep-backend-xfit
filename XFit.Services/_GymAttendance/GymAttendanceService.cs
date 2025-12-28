@@ -91,7 +91,9 @@ namespace XFit.Services._GymAttendance
                 GymAttendanceReference = _randomService.GetSecureAlphaNumericString(10).ToUpper(),
                 PaymentMoment = null,
                 ExpirePaymentCode = DateTime.UtcNow.AddMinutes(20),
-                CreatedMoment = DateTime.UtcNow
+                CreatedMoment = DateTime.UtcNow,
+                GymAddress = gym.Address.Address,
+                GymImageUrl = gym.Images.Where(q => q.Order == 0).Select(q => q.ImageUrl).FirstOrDefault()
             };
 
             await _gymAttendanceRepository.InsertOneAsync(newAttendance);
@@ -173,7 +175,8 @@ namespace XFit.Services._GymAttendance
                 PaymentMoment = x.PaymentMoment,
 
                 GivenRate = x.GivenRate,
-
+                GymImageUrl = x.GymImageUrl,
+                GymAddress = x.GymAddress,
                 CreatedMoment = x.CreatedMoment,
                 ModifiedMoment = x.ModifiedMoment
             }).ToList();
@@ -339,7 +342,8 @@ namespace XFit.Services._GymAttendance
                 PaymentMoment = x.PaymentMoment,
 
                 GivenRate = x.GivenRate,
-
+                GymImageUrl = x.GymImageUrl,
+                GymAddress = x.GymAddress,
                 CreatedMoment = x.CreatedMoment,
                 ModifiedMoment = x.ModifiedMoment
             }).ToList();
@@ -400,9 +404,11 @@ namespace XFit.Services._GymAttendance
                        PaymentMoment = x.PaymentMoment,
 
                        GivenRate = x.GivenRate,
-
+                       
                        CreatedMoment = x.CreatedMoment,
-                       ModifiedMoment = x.ModifiedMoment
+                       ModifiedMoment = x.ModifiedMoment,
+                       GymAddress = x.GymAddress,
+                       GymImageUrl = x.GymImageUrl
                    })
                    .ExecuteAsync(query);
 

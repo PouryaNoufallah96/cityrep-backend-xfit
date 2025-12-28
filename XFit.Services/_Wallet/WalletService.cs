@@ -4,6 +4,8 @@ using Xfit.Domain.Collections;
 using Xfit.Domain.Common;
 using Xfit.Domain.Repositories.Contracts;
 using XFit.Services._Wallet.DTOs;
+using XFit.Utilities.Constants;
+using XFit.Utilities.DTOs;
 using XFit.Utilities.Exceptions.Common;
 using static XFit.Utilities.Constants.RegisterMode;
 
@@ -42,20 +44,20 @@ namespace XFit.Services._Wallet
         }
 
         public async Task MakeWalletShouldUpdateAsync(string publicKey)
-        { 
+        {
             var filter = Builders<Wallet>.Filter.Eq(q => q.WalletId, publicKey);
             var update = Builders<Wallet>.Update.Set(q => q.ShouldUpdate, true);
             await _walletRepository.FindOneAndUpdateAsync(filter, update);
         }
 
         public async Task MakeWalletShouldUpdateAsync(List<string> publicKeys)
-        { 
+        {
             var filter = Builders<Wallet>.Filter.In(q => q.WalletId, publicKeys);
             var update = Builders<Wallet>.Update.Set(q => q.ShouldUpdate, true);
             await _walletRepository.UpdateManyAsync(filter, update);
         }
 
-        public async Task InitWalletAsync(string publicKey , UserRole userRole)
+        public async Task InitWalletAsync(string publicKey, UserRole userRole)
         {
             try
             {
@@ -77,21 +79,117 @@ namespace XFit.Services._Wallet
             {
                 throw new BaseException();
             }
-                
+
         }
 
         public async Task SyncWalletAsync()
         {
-            var wallet = await  _walletRepository.AsQueryable()
+            var wallet = await _walletRepository.AsQueryable()
                 .Where(q => q.ShouldUpdate == true)
                 .OrderByDescending(q => q.ModifiedMoment)
                 .FirstOrDefaultAsync();
 
-            if( wallet == null)
+            if (wallet == null)
                 return;
             await SyncWalletAsync(wallet);
 
         }
+
+        public async Task<ClientTransactionListResult> GetClientTransactionsAsync(
+        string publicKey,
+        Pagination pagination)
+        {
+            if (CurrentRequestContext.Role.ToLower() != "client")
+                throw new BadRequestException("کاربر نامشخص");
+
+            var depositsQuery = _depositRepository.AsQueryable()
+                .Where(x => x.SourcePublicKey == publicKey)
+                .Select(x => new ClientTransactionResult
+                {
+                    CreatedMoment = x.CreatedMoment,
+                    Title = "واریز به کیف پول",
+                    Price = x.Amount,
+                    Type = ClientTransactionType.Deposit
+                });
+
+            var attendancePaymentsQuery = _gymAttendanceRepository.AsQueryable()
+                .Where(x => x.ClientPublicKey == publicKey)
+                .Select(x => new ClientTransactionResult
+                {
+                    CreatedMoment = x.CreatedMoment,
+                    Title = x.GymTitle,
+                    Price = x.Price,
+                    Type = ClientTransactionType.GymAttendancePayment
+                });
+
+            var allTransactionsQuery = depositsQuery
+                .Concat(attendancePaymentsQuery)
+                .OrderByDescending(x => x.CreatedMoment)
+                .ThenByDescending(x => x.Type);
+
+            var totalCount = await allTransactionsQuery.CountAsync();
+
+            var data = await allTransactionsQuery
+                .Skip((pagination.Page - 1) * pagination.Size)
+                .Take(pagination.Size)
+                .ToListAsync();
+
+            return new ClientTransactionListResult
+            {
+                Data = data,
+                TotalCount = totalCount,
+                PageCount = (int)Math.Ceiling(totalCount / (double)pagination.Size)
+            };
+        }
+
+        public async Task<GymOwnerTransactionListResult> GetGymOwnerTransactionsAsync(
+        string publicKey,
+        Pagination pagination)
+        {
+            if (CurrentRequestContext.Role.ToLower() != "gymowner")
+
+                throw new BadRequestException("کاربر نامشخص");
+
+            var withdrawalsQuery = _withdrawalRepository.AsQueryable()
+                .Where(x => x.PublicKey == publicKey)
+                .Select(x => new GymOwnerTransactionResult
+                {
+                    CreatedMoment = x.CreatedMoment,
+                    Title = "برداشت از کیف پول",
+                    Price = x.Amount,
+                    Type = GymOwnerTransactionType.Withdarawal
+                });
+
+            var attendancePaymentsQuery = _gymAttendanceRepository.AsQueryable()
+                .Where(x => x.GymOwnerPublicKey == publicKey)
+                .Select(x => new GymOwnerTransactionResult
+                {
+                    CreatedMoment = x.CreatedMoment,
+                    Title = "انتقال به کیف پول",
+                    Price = x.Price,
+                    Type = GymOwnerTransactionType.GymAttendancePayment
+                });
+
+            var allTransactionsQuery = withdrawalsQuery
+                .Concat(attendancePaymentsQuery)
+                .OrderByDescending(x => x.CreatedMoment)
+                .ThenByDescending(x => x.Type); // پایدارسازی ترتیب
+
+            var totalCount = await allTransactionsQuery.CountAsync();
+
+            var data = await allTransactionsQuery
+                .Skip((pagination.Page - 1) * pagination.Size)
+                .Take(pagination.Size)
+                .ToListAsync();
+
+            return new GymOwnerTransactionListResult
+            {
+                Data = data,
+                TotalCount = totalCount,
+                PageCount = (int)Math.Ceiling(totalCount / (double)pagination.Size)
+            };
+        }
+
 
 
         private async Task SyncWalletAsync(Wallet wallet)
@@ -100,7 +198,7 @@ namespace XFit.Services._Wallet
                 await SyncClientWalletAsync(wallet.WalletId);
             else
                 await SyncGymOwnerWalletAsync(wallet.WalletId);
-         
+
         }
 
         private async Task<WalletResult> SyncGymOwnerWalletAsync(string whois)
@@ -162,6 +260,6 @@ namespace XFit.Services._Wallet
             };
         }
 
-      
+
     }
 }

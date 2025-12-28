@@ -30,7 +30,8 @@ namespace XFit.Services._GymAttendance.DTOs
         public DateTime? ExpirePaymentCode { get; set; }
         public GymAttendanceState PaymentState { get; set; }
         public DateTime? PaymentMoment { get; set; }
-
+        public string GymAddress { get; set; }
+        public string GymImageUrl { get; set; }
         public decimal? GivenRate { get; set; } = null;
     }
 
