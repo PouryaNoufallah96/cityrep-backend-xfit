@@ -199,7 +199,7 @@ namespace XFit.Services._Wallet
             else
                 await SyncGymOwnerWalletAsync(wallet.WalletId);
 
-        }
+        } 
 
         private async Task<WalletResult> SyncGymOwnerWalletAsync(string whois)
         {
