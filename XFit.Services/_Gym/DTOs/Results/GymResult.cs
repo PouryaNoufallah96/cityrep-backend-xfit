@@ -18,7 +18,7 @@ namespace XFit.Services._Gym.DTOs.Results
         public List<Gender> SupportedGender { get; set; }
 
         public AddressInfo Address { get; set; }
-        public List<GymTrendWorkingHour> GymTotalWorkingHour { get; set; }
+        public List<GymTotalWorkingHour> GymTotalWorkingHour { get; set; }
 
         public Contact Contact { get; set; } = null;
         public List<GymImage> Images { get; set; } = null;

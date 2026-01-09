@@ -14,13 +14,16 @@ namespace Xfit.Domain.Collections
         public string Title { get; set; }
         public string Description { get; set; }
         public GymLevel Level { get; set; }
+        public decimal Price { get; set; }
+        public DateTime PriceTrackerDatetime { get; set; }  
         public string Slug { get; set; }
          
         public List<Gender> SupportedGender { get; set; }
+        public List<GymTimeType> SupportedTimeType { get; set; } 
         public GymState State { get; set; } 
 
         public AddressInfo Address { get; set; }
-        public List<GymTrendWorkingHour> GymTotalWorkingHour { get; set; }
+        public List<GymTotalWorkingHour> GymTotalWorkingHour { get; set; }
 
         public Contact Contact { get; set; } = null;
         public List<GymImage> Images { get; set; } = null;
@@ -32,7 +35,7 @@ namespace Xfit.Domain.Collections
 
     }
 
-
+    
     public enum GymState
     {
         NotVerified,
@@ -47,14 +50,11 @@ namespace Xfit.Domain.Collections
         public string Title { get; set; }
     }
 
-
-
     public class GymImage
     {
         public string ImageUrl { get; set; }
         public int Order { get; set; }
     }
-
 
     public class GymTrendInfo
     {
@@ -65,6 +65,12 @@ namespace Xfit.Domain.Collections
         public GenderWorkingHours Women { get; set; } = new GenderWorkingHours();
     }
 
+    public enum GymTimeType
+    {
+        FreeTime,
+        Session
+    }
+
     public class GenderWorkingHours
     {
         public bool IsActive { get; set; } = true;
@@ -73,11 +79,31 @@ namespace Xfit.Domain.Collections
 
     public class GymTrendWorkingHour
     {
+        public DayOfWeek DayOfWeek { get; set; }       
+        public List<GymSession> Sessions { get; set; }
+    }
+
+    //public class FreeTimeRange
+    //{
+    //    public long From { get; set; } 
+    //    public long To { get; set; }
+    //}
+
+    public class GymSession
+    {
+        public GymTimeType TimeType { get; set; }
+        public long From { get; set; }
+        public long To { get; set; }
+        public int? Capacity { get; set; }
+    }
+
+
+    public class GymTotalWorkingHour
+    {
         public DayOfWeek DayOfWeek { get; set; }
         public long? From { get; set; }
         public long? To { get; set; }
         public bool IsClosed { get; set; }
     }
-
 
 }

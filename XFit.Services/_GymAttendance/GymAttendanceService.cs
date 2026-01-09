@@ -40,7 +40,7 @@ namespace XFit.Services._GymAttendance
                 .FirstOrDefault(q => q.GymTrendId == update.GymTrendId)
                 ?? throw new NotFoundException("رشته ی ورزشی در باشگاه یافت نشد");
 
-            var attendancePrice = GetGymPrice(gym);
+            var attendancePrice = gym.Price;
             var clientBalance = await GetClientBalanceAsync(whois);
 
             if (attendancePrice > clientBalance)
@@ -423,19 +423,19 @@ namespace XFit.Services._GymAttendance
         #endregion
 
 
-        private decimal GetGymPrice(Gym gym)
-        {
-            if (gym == null)
-                throw new ArgumentNullException(nameof(gym));
+        //private decimal GetGymPrice(Gym gym)
+        //{
+        //    if (gym == null)
+        //        throw new ArgumentNullException(nameof(gym));
 
-            var levelData = _gymLevelSettings
-                .FirstOrDefault(x => x.Level == gym.Level);
+        //    var levelData = _gymLevelSettings
+        //        .FirstOrDefault(x => x.Level == gym.Level);
 
-            if (levelData == null)
-                throw new BadRequestException("سطح باشگاه یافت نشد");
+        //    if (levelData == null)
+        //        throw new BadRequestException("سطح باشگاه یافت نشد");
 
-            return levelData.Price;
-        }
+        //    return levelData.Price;
+        //}
 
       
     }

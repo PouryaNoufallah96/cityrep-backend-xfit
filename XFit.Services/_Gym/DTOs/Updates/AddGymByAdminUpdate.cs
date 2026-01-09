@@ -1,4 +1,5 @@
-﻿using Xfit.Domain.Collections;
+﻿using System.Text.Json.Serialization;
+using Xfit.Domain.Collections;
 using Xfit.Domain.Common;
 
 namespace XFit.Services._Gym.DTOs.Updates
@@ -8,6 +9,7 @@ namespace XFit.Services._Gym.DTOs.Updates
         public string Title { get; set; }
         public string Description { get; set; }
         public GymLevel Level { get; set; }
+        public decimal Price { get; set; } 
         public AddressInfoUpdate Address { get; set; } 
         public Contact Contact { get; set; } = null;
         public List<GymImage> Images { get; set; } = null;
@@ -29,9 +31,18 @@ namespace XFit.Services._Gym.DTOs.Updates
      
  
 
-    public class EditGymUpdate : AddGymUpdate
+    public class EditGymUpdate/* : AddGymUpdate*/
     {
         public string GymId { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+        //[JsonIgnore]public GymLevel Level { get; set; }
+        public decimal Price { get; set; }
+        public AddressInfoUpdate Address { get; set; }
+        public Contact Contact { get; set; } = null;
+        public List<GymImage> Images { get; set; } = null;
+        public List<GymTrendInfoUpdate> Trends { get; set; } = null;
+        public List<string> FacilityIds { get; set; } = null;
     }
 
     public class GymTrendInfoUpdate
@@ -50,6 +61,7 @@ namespace XFit.Services._Gym.DTOs.Updates
     public class EditGymByAdminUpdate : EditGymUpdate
     {
         public string GymOwnerPublicKey { get; set; }
+        //public GymLevel Level { get; set; }
 
     }
 

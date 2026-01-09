@@ -8,6 +8,7 @@ using Xfit.Domain.Common;
 using Xfit.Domain.Repositories;
 using Xfit.Domain.Repositories.Contracts;
 using XFit.Services._Gym.DTOs.Results;
+using XFit.Services._Gym.DTOs.Settings;
 using XFit.Services._Gym.DTOs.Updates;
 using XFit.Services._GymClosure.DTOs;
 using XFit.Utilities.Exceptions.Common;
@@ -21,6 +22,7 @@ namespace XFit.Services._Gym
     public class GymService(IGymRepository _gymRepository,
         IGymTrendRepository _gymTrendRepository,
         IRandomService randomService,
+        GymLevelSettings _gymLevelSettings,
         IGymAttendanceRepository _gymAttendanceRepository,
         IGymClosureRepository _gymClosureRepository,
         IGymFacilityRepository _gymFacilityRepository) : IGymService, IScopedDependency
@@ -36,6 +38,8 @@ namespace XFit.Services._Gym
         /// <returns></returns>
         public async Task<GymResult> AddGymAsync(AddGymUpdate update, string whois)
         {
+
+            ValidatePriceWithLevel(update.Price, update.Level);
             var newGym = new Gym
             {
                 Title = update.Title.Trim(),
@@ -46,7 +50,9 @@ namespace XFit.Services._Gym
                 Images = update.Images,
                 State = GymState.NotVerified,
                 Slug = CreateSlug(update.Title),
-                GymOwnerPublicKey = whois
+                GymOwnerPublicKey = whois,
+                Price = update.Price,
+                PriceTrackerDatetime = DateTime.UtcNow,
             };
 
             await GetFacilitiesAsync(newGym, update.FacilityIds);
@@ -57,6 +63,15 @@ namespace XFit.Services._Gym
             return ConvertToResult(newGym);
         }
 
+        private void ValidatePriceWithLevel(decimal price, GymLevel gymLevel)
+        {
+            var gymSetting = _gymLevelSettings.FirstOrDefault(q => q.Level == gymLevel)
+            ?? throw new NotFoundException("Gym Level not found!");
+
+            if (price < gymSetting.FromPrice || price > gymSetting.ToPrice)
+                throw new BadRequestException("قیمت تعیین شده خارج از سطح باشگاه می باشد");
+
+        }
 
         private AddressInfo CreateAddressInfo(AddressInfoUpdate update)
         {
@@ -75,106 +90,144 @@ namespace XFit.Services._Gym
         }
 
 
-        /// <summary>
-        /// this method use for handle gym trends
-        /// </summary>
-        /// <param name="gym"></param>
-        /// <param name="trends"></param>
-        /// <returns></returns>
-        /// 
         private async Task HandleGymTrends(Gym gym, List<GymTrendInfoUpdate> trends)
         {
-            try
+            if (trends == null || trends.Count == 0)
             {
-                if (trends == null || trends.Count == 0)
-                {
-                    gym.Trends = new List<GymTrendInfo>();
-                    gym.SupportedGender = new List<Gender>();
-                    gym.GymTotalWorkingHour = InitWeek();
-                    return;
-                }
-
-                trends = trends
-                    .Where(t => !string.IsNullOrWhiteSpace(t.GymTrendId))
-                    .DistinctBy(t => t.GymTrendId)
-                    .ToList();
-
-
-                var supportedGender = new HashSet<Gender>();
-                var totalWeek = InitWeek();
-
-                var trendTitles = await GetGymTrendsAsync(trends.Select(t => t.GymTrendId).ToList());
-                var titleMap = trendTitles.ToDictionary(t => t.GymTrendId, t => t.Title);
-
-                var finalTrends = new List<GymTrendInfo>();
-
-                foreach (var input in trends)
-                {
-                    var trend = new GymTrendInfo
-                    {
-                        GymTrendId = input.GymTrendId,
-                        Title = titleMap.GetValueOrDefault(input.GymTrendId),
-
-                        Men = BuildGenderWorkingHours(input.Men, Gender.Male, supportedGender, totalWeek),
-                        Women = BuildGenderWorkingHours(input.Women, Gender.Female, supportedGender, totalWeek)
-                    };
-
-                    finalTrends.Add(trend);
-                }
-
-                gym.Trends = finalTrends;
-                gym.SupportedGender = supportedGender.ToList();
-                gym.GymTotalWorkingHour = totalWeek;
+                gym.Trends = new List<GymTrendInfo>();
+                gym.SupportedGender = new List<Gender>();
+                gym.SupportedTimeType = new List<GymTimeType>();
+                gym.GymTotalWorkingHour = InitTotalWeek();
+                return;
             }
-            catch (Exception e)
+
+            trends = trends
+                .Where(t => !string.IsNullOrWhiteSpace(t.GymTrendId))
+                .DistinctBy(t => t.GymTrendId)
+                .ToList();
+
+
+            var trendTitles = await GetGymTrendsAsync(trends.Select(t => t.GymTrendId).ToList());
+            var titleMap = trendTitles.ToDictionary(t => t.GymTrendId, t => t.Title);
+
+            var finalTrends = new List<GymTrendInfo>();
+
+            foreach (var input in trends)
             {
-                throw new Exception("Error while handling gym trends", e);
+                var trend = new GymTrendInfo
+                {
+                    GymTrendId = input.GymTrendId,
+                    Title = titleMap.GetValueOrDefault(input.GymTrendId),
+
+                    Men = BuildGenderWorkingHours(input.Men, Gender.Male),
+                    Women = BuildGenderWorkingHours(input.Women, Gender.Female)
+                };
+
+                finalTrends.Add(trend);
             }
+
+            gym.Trends = finalTrends;
+            gym.SupportedGender = CalculateSupportedGenderForGym(gym);
+            gym.SupportedTimeType = CalculateSupportedGymTimeTypeForGym(gym);
+            gym.GymTotalWorkingHour = CalculateGymTotalTimeForGym(gym);
         }
 
 
 
-
-        /// <summary>
-        /// this method use for build gender working hours
-        /// </summary>
-        /// <param name="input"></param>
-        /// <param name="gender"></param>
-        /// <param name="supportedGender"></param>
-        /// <param name="totalWeek"></param>
-        /// <returns></returns>
-        private GenderWorkingHours BuildGenderWorkingHours(
-            GenderWorkingHours input,
-            Gender gender,
-            HashSet<Gender> supportedGender,
-            List<GymTrendWorkingHour> totalWeek)
+        private List<Gender> CalculateSupportedGenderForGym(Gym gym)
         {
-            var result = new GenderWorkingHours
-            {
-                IsActive = input != null,
-                WorkingHours = NormalizeWeek(input?.WorkingHours)
-            };
+            var result = new List<Gender>();
 
-            if (result.IsActive && result.WorkingHours.Any(d => !d.IsClosed))
-                supportedGender.Add(gender);
-
-            foreach (var day in result.WorkingHours.Where(d => !d.IsClosed))
-            {
-                var totalDay = totalWeek.First(x => x.DayOfWeek == day.DayOfWeek);
-
-                totalDay.IsClosed = false;
-
-                totalDay.From = totalDay.From.HasValue
-                    ? Math.Min(totalDay.From.Value, day.From.Value)
-                    : day.From;
-
-                totalDay.To = totalDay.To.HasValue
-                    ? Math.Max(totalDay.To.Value, day.To.Value)
-                    : day.To;
-            }
+            var hasMen = gym.Trends.Any(q => q.Men.IsActive == true && q.Men.WorkingHours != null);
+            if (hasMen) { result.Add(Gender.Male); }
+            var hasWomenMen = gym.Trends.Any(q => q.Women.IsActive == true && q.Women.WorkingHours != null);
+            if (hasWomenMen) { result.Add(Gender.Female); }
 
             return result;
         }
+
+        private List<GymTimeType> CalculateSupportedGymTimeTypeForGym(Gym gym)
+        {
+            var result = new List<GymTimeType>();
+
+            var hasFreeTimeInMen = gym.Trends.Any(q => q.Men.IsActive == true && q.Men.WorkingHours.Any(q => q.Sessions.Any(q => q.TimeType == GymTimeType.FreeTime)));
+            var hasFreeTimeInWomen = gym.Trends.Any(q => q.Women.IsActive == true && q.Women.WorkingHours.Any(q => q.Sessions.Any(q => q.TimeType == GymTimeType.FreeTime)));
+            if (hasFreeTimeInMen || hasFreeTimeInWomen) result.Add(GymTimeType.FreeTime);
+
+            var hasSessionInMen = gym.Trends.Any(q => q.Men.IsActive == true && q.Men.WorkingHours.Any(q => q.Sessions.Any(q => q.TimeType == GymTimeType.Session)));
+            var hasSessionInWomen = gym.Trends.Any(q => q.Women.IsActive == true && q.Women.WorkingHours.Any(q => q.Sessions.Any(q => q.TimeType == GymTimeType.Session)));
+            if (hasSessionInMen || hasSessionInWomen) result.Add(GymTimeType.FreeTime);
+
+
+            return result;
+        }
+
+
+        private List<GymTotalWorkingHour> CalculateGymTotalTimeForGym(Gym gym)
+        {
+
+            var result = InitTotalWeek();
+            foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
+            {
+                var minInMen = gym.Trends.Where(q => q.Men.IsActive == true).Min(q => q.Men.WorkingHours.Select(q => q).Where( q=> q.DayOfWeek == day));
+
+
+
+            }
+            return result;
+        }
+
+
+        private GenderWorkingHours BuildGenderWorkingHours(
+        GenderWorkingHours input,
+        Gender gender)
+        {
+            var result = new GenderWorkingHours
+            {
+                IsActive = input != null ? input.IsActive : false,
+                WorkingHours = NormalizeWeek(input?.WorkingHours)
+            };
+
+            if (!result.IsActive)
+                return result;
+
+            return result;
+        }
+
+
+        //private bool HasAnyOpenTime(GymTrendWorkingHour day)
+        //{
+        //    if (day.TimeType == GymTimeType.FreeTime && day.FreeTime != null)
+        //        return true;
+
+        //    if (day.TimeType == GymTimeType.Session && day.Sessions?.Any() == true)
+        //        return true;
+
+        //    return false;
+        //}
+
+
+        //private void MergeTotalDay(GymTrendWorkingHour total, GymTrendWorkingHour source)
+        //{
+        //    if (source.TimeType == GymTimeType.FreeTime)
+        //    {
+        //        total.TimeType = GymTimeType.FreeTime;
+        //        total.FreeTime ??= new FreeTimeRange();
+
+        //        total.FreeTime.From = total.FreeTime.From == 0
+        //            ? source.FreeTime.From
+        //            : Math.Min(total.FreeTime.From, source.FreeTime.From);
+
+        //        total.FreeTime.To = Math.Max(total.FreeTime.To, source.FreeTime.To);
+        //    }
+        //    else
+        //    {
+        //        total.TimeType = GymTimeType.Session;
+        //        total.Sessions ??= new List<GymSession>();
+
+        //        total.Sessions.AddRange(source.Sessions);
+        //    }
+        //}
 
 
         /// <summary>
@@ -190,9 +243,26 @@ namespace XFit.Services._Gym
                 result.Add(new GymTrendWorkingHour
                 {
                     DayOfWeek = day,
-                    IsClosed = true,
+                    Sessions = null
+                });
+            }
+
+            return result;
+        }
+
+
+        private List<GymTotalWorkingHour> InitTotalWeek()
+        {
+            var result = new List<GymTotalWorkingHour>();
+
+            foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
+            {
+                result.Add(new GymTotalWorkingHour
+                {
+                    DayOfWeek = day,
                     From = null,
-                    To = null
+                    To = null,
+                    IsClosed = true
                 });
             }
 
@@ -205,6 +275,7 @@ namespace XFit.Services._Gym
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
+        /// 
         private List<GymTrendWorkingHour> NormalizeWeek(List<GymTrendWorkingHour> input)
         {
             var result = InitWeek();
@@ -217,13 +288,12 @@ namespace XFit.Services._Gym
                 var source = input.FirstOrDefault(x => x.DayOfWeek == day.DayOfWeek);
                 if (source == null) continue;
 
-                day.IsClosed = source.IsClosed;
-                day.From = source.From;
-                day.To = source.To;
+                day.Sessions = source.Sessions;
             }
 
             return result;
         }
+
 
 
 
@@ -265,6 +335,7 @@ namespace XFit.Services._Gym
             }
         }
 
+
         /// <summary>
         /// this method use to get gym trend details
         /// </summary>
@@ -278,7 +349,6 @@ namespace XFit.Services._Gym
 
             return gymTrends;
         }
-
 
 
         /// <summary>
@@ -308,7 +378,7 @@ namespace XFit.Services._Gym
             }
 
             gym.Description = update.Description.Trim();
-            gym.Level = update.Level;
+            //gym.Level = update.Level;
             gym.Address = CreateAddressInfo(update.Address);
             gym.Contact = update.Contact;
             gym.Images = update.Images;
@@ -324,6 +394,16 @@ namespace XFit.Services._Gym
                 gym.Facilities = [];
             }
 
+            if(gym.Price != update.Price)
+            {
+                if (gym.PriceTrackerDatetime > DateTime.UtcNow.AddDays(-7))
+                    throw new BadRequestException("ویرایش قیمت فقط یکبار در هفته مجاز می باشد");
+                ValidatePriceWithLevel(update.Price,gym.Level);
+                gym.Price = update.Price;
+                gym.PriceTrackerDatetime = DateTime.UtcNow;
+            }
+
+
             if (update.Trends != null && update.Trends.Any())
             {
                 await HandleGymTrends(gym, update.Trends);
@@ -332,7 +412,7 @@ namespace XFit.Services._Gym
             {
                 gym.Trends = [];
                 gym.SupportedGender = [];
-                gym.GymTotalWorkingHour = InitWeek();
+                gym.GymTotalWorkingHour = InitTotalWeek();
             }
 
             gym.State = GymState.NotVerified;
@@ -701,7 +781,7 @@ namespace XFit.Services._Gym
                 GymId = update.GymId,
                 Title = update.Title,
                 Description = update.Description,
-                Level = update.Level,
+                //Level = update.Level,
                 Address = update.Address,
                 Contact = update.Contact,
                 Images = update.Images,
@@ -903,7 +983,6 @@ namespace XFit.Services._Gym
                 .AnyAsync(g => g.Trends.Any(t => t.GymTrendId == trendId));
         }
 
-
         public async Task UpdateGymTrendTitleAsync(string trendId, string newTitle)
         {
             if (string.IsNullOrWhiteSpace(trendId))
@@ -932,8 +1011,6 @@ namespace XFit.Services._Gym
                 throw new BaseException("Error while updating gym trend title", ex);
             }
         }
-
-
 
         public async Task SyncRateOfGymAsync(string gymId)
         {
@@ -1044,3 +1121,148 @@ namespace XFit.Services._Gym
 
     }
 }
+
+
+
+///// <summary>
+///// this method use for handle gym trends
+///// </summary>
+///// <param name="gym"></param>
+///// <param name="trends"></param>
+///// <returns></returns>
+///// 
+//private async Task HandleGymTrends(Gym gym, List<GymTrendInfoUpdate> trends)
+//{
+//    try
+//    {
+//        if (trends == null || trends.Count == 0)
+//        {
+//            gym.Trends = new List<GymTrendInfo>();
+//            gym.SupportedGender = new List<Gender>();
+//            gym.GymTotalWorkingHour = InitWeek();
+//            return;
+//        }
+
+//        trends = trends
+//            .Where(t => !string.IsNullOrWhiteSpace(t.GymTrendId))
+//            .DistinctBy(t => t.GymTrendId)
+//            .ToList();
+
+
+//        var supportedGender = new HashSet<Gender>();
+//        var totalWeek = InitWeek();
+
+//        var trendTitles = await GetGymTrendsAsync(trends.Select(t => t.GymTrendId).ToList());
+//        var titleMap = trendTitles.ToDictionary(t => t.GymTrendId, t => t.Title);
+
+//        var finalTrends = new List<GymTrendInfo>();
+
+//        foreach (var input in trends)
+//        {
+//            var trend = new GymTrendInfo
+//            {
+//                GymTrendId = input.GymTrendId,
+//                Title = titleMap.GetValueOrDefault(input.GymTrendId),
+
+//                Men = BuildGenderWorkingHours(input.Men, Gender.Male, supportedGender, totalWeek),
+//                Women = BuildGenderWorkingHours(input.Women, Gender.Female, supportedGender, totalWeek)
+//            };
+
+//            finalTrends.Add(trend);
+//        }
+
+//        gym.Trends = finalTrends;
+//        gym.SupportedGender = supportedGender.ToList();
+//        gym.GymTotalWorkingHour = totalWeek;
+//    }
+//    catch (Exception e)
+//    {
+//        throw new Exception("Error while handling gym trends", e);
+//    }
+//}
+
+
+
+
+///// <summary>
+///// this method use for build gender working hours
+///// </summary>
+///// <param name="input"></param>
+///// <param name="gender"></param>
+///// <param name="supportedGender"></param>
+///// <param name="totalWeek"></param>
+///// <returns></returns>
+//private GenderWorkingHours BuildGenderWorkingHours(
+//    GenderWorkingHours input,
+//    Gender gender,
+//    HashSet<Gender> supportedGender,
+//    List<GymTrendWorkingHour> totalWeek)
+//{
+//    var result = new GenderWorkingHours
+//    {
+//        IsActive = input != null,
+//        WorkingHours = NormalizeWeek(input?.WorkingHours)
+//    };
+
+//    if (result.IsActive && result.WorkingHours.Any(d => !d.IsClosed))
+//        supportedGender.Add(gender);
+
+//    foreach (var day in result.WorkingHours.Where(d => !d.IsClosed))
+//    {
+//        var totalDay = totalWeek.First(x => x.DayOfWeek == day.DayOfWeek);
+
+//        totalDay.IsClosed = false;
+
+//        totalDay.From = totalDay.From.HasValue
+//            ? Math.Min(totalDay.From.Value, day.From.Value)
+//            : day.From;
+
+//        totalDay.To = totalDay.To.HasValue
+//            ? Math.Max(totalDay.To.Value, day.To.Value)
+//            : day.To;
+//    }
+
+//    return result;
+//}
+
+
+
+
+//private List<GymTrendWorkingHour> InitWeek()
+//{
+//    var result = new List<GymTrendWorkingHour>();
+
+//    foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
+//    {
+//        result.Add(new GymTrendWorkingHour
+//        {
+//            DayOfWeek = day,
+//            IsClosed = true,
+//            From = null,
+//            To = null
+//        });
+//    }
+
+//    return result;
+//}
+
+
+//private List<GymTrendWorkingHour> NormalizeWeek(List<GymTrendWorkingHour> input)
+//{
+//    var result = InitWeek();
+
+//    if (input == null)
+//        return result;
+
+//    foreach (var day in result)
+//    {
+//        var source = input.FirstOrDefault(x => x.DayOfWeek == day.DayOfWeek);
+//        if (source == null) continue;
+
+//        day.IsClosed = source.IsClosed;
+//        day.From = source.From;
+//        day.To = source.To;
+//    }
+
+//    return result;
+//}
