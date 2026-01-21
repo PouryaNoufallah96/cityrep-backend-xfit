@@ -10,11 +10,10 @@ namespace Xfit.Domain.Collections
     {
         public string GymId { get; set; } = Guid.NewGuid().ToString("N");
         public string GymOwnerPublicKey { get; set; }
-
+        public DateTime GymOwnerLastUpdateMoment { get; set; } = DateTime.MinValue;
         public string Title { get; set; }
         public string Description { get; set; }
         public GymLevel Level { get; set; }
-        public decimal Price { get; set; }
         public DateTime PriceTrackerDatetime { get; set; }  
         public string Slug { get; set; }
          
@@ -61,8 +60,8 @@ namespace Xfit.Domain.Collections
         public string GymTrendId { get; set; }
         public string Title { get; set; }
 
-        public GenderWorkingHours Men { get; set; } = new GenderWorkingHours();
-        public GenderWorkingHours Women { get; set; } = new GenderWorkingHours();
+        public List<GymTrendWorkingHour> Men { get; set; } = null;
+        public List<GymTrendWorkingHour> Women { get; set; } = null;
     }
 
     public enum GymTimeType
@@ -71,11 +70,11 @@ namespace Xfit.Domain.Collections
         Session
     }
 
-    public class GenderWorkingHours
-    {
-        public bool IsActive { get; set; } = true;
-        public List<GymTrendWorkingHour> WorkingHours { get; set; } = null;
-    }
+    //public class GenderWorkingHours
+    //{
+    //    public bool IsActive { get; set; } = true;
+    //    public List<GymTrendWorkingHour> WorkingHours { get; set; } = null;
+    //}
 
     public class GymTrendWorkingHour
     {
@@ -91,6 +90,8 @@ namespace Xfit.Domain.Collections
 
     public class GymSession
     {
+        public string GymSessionId { get; set; } = Guid.NewGuid().ToString("N");
+        public decimal Price { get; set; } 
         public GymTimeType TimeType { get; set; }
         public long From { get; set; }
         public long To { get; set; }

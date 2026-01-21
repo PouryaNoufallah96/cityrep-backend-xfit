@@ -206,7 +206,7 @@ namespace XFit.Services._Wallet
             var totalIncome = await _gymAttendanceRepository.AsQueryable()
                 .Where(q =>
                     q.GymOwnerPublicKey == whois &&
-                    q.PaymentState == GymAttendanceState.Paid)
+                    q.PaymentState == GymAttendanceState.Used)
                 .SumAsync(q => q.Price);
 
             var withdrawalSums = await _withdrawalRepository.AsQueryable()

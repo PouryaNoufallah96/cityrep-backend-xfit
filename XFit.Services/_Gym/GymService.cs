@@ -39,7 +39,6 @@ namespace XFit.Services._Gym
         public async Task<GymResult> AddGymAsync(AddGymUpdate update, string whois)
         {
 
-            ValidatePriceWithLevel(update.Price, update.Level);
             var newGym = new Gym
             {
                 Title = update.Title.Trim(),
@@ -51,7 +50,6 @@ namespace XFit.Services._Gym
                 State = GymState.NotVerified,
                 Slug = CreateSlug(update.Title),
                 GymOwnerPublicKey = whois,
-                Price = update.Price,
                 PriceTrackerDatetime = DateTime.UtcNow,
             };
 
@@ -63,16 +61,12 @@ namespace XFit.Services._Gym
             return ConvertToResult(newGym);
         }
 
-        private void ValidatePriceWithLevel(decimal price, GymLevel gymLevel)
-        {
-            var gymSetting = _gymLevelSettings.FirstOrDefault(q => q.Level == gymLevel)
-            ?? throw new NotFoundException("Gym Level not found!");
 
-            if (price < gymSetting.FromPrice || price > gymSetting.ToPrice)
-                throw new BadRequestException("قیمت تعیین شده خارج از سطح باشگاه می باشد");
-
-        }
-
+        /// <summary>
+        /// for create address info for gym
+        /// </summary>
+        /// <param name="update"></param>
+        /// <returns></returns>
         private AddressInfo CreateAddressInfo(AddressInfoUpdate update)
         {
             var address = new AddressInfo
@@ -89,7 +83,13 @@ namespace XFit.Services._Gym
             return address;
         }
 
-
+        /// <summary>
+        /// handle gym trends and working hours
+        /// </summary>
+        /// <param name="gym"></param>
+        /// <param name="trends"></param>
+        /// <returns></returns>
+        /// <exception cref="BadRequestException"></exception>
         private async Task HandleGymTrends(Gym gym, List<GymTrendInfoUpdate> trends)
         {
             if (trends == null || trends.Count == 0)
@@ -106,128 +106,284 @@ namespace XFit.Services._Gym
                 .DistinctBy(t => t.GymTrendId)
                 .ToList();
 
-
             var trendTitles = await GetGymTrendsAsync(trends.Select(t => t.GymTrendId).ToList());
-            var titleMap = trendTitles.ToDictionary(t => t.GymTrendId, t => t.Title);
+            var titleMap = trendTitles.ToDictionary(x => x.GymTrendId, x => x.Title);
 
-            var finalTrends = new List<GymTrendInfo>();
+            var result = new List<GymTrendInfo>();
 
-            foreach (var input in trends)
+            foreach (var trendUpdate in trends)
             {
+                if (!titleMap.ContainsKey(trendUpdate.GymTrendId))
+                    throw new BadRequestException($"رشته ورزشی {trendUpdate.GymTrendId} نامعتبر است");
+
                 var trend = new GymTrendInfo
                 {
-                    GymTrendId = input.GymTrendId,
-                    Title = titleMap.GetValueOrDefault(input.GymTrendId),
-
-                    Men = BuildGenderWorkingHours(input.Men, Gender.Male),
-                    Women = BuildGenderWorkingHours(input.Women, Gender.Female)
+                    GymTrendId = trendUpdate.GymTrendId,
+                    Title = titleMap[trendUpdate.GymTrendId],
+                    Men = BuildGenderWorkingHours(trendUpdate.Men, gym.Level),
+                    Women = BuildGenderWorkingHours(trendUpdate.Women, gym.Level)
                 };
 
-                finalTrends.Add(trend);
+                result.Add(trend);
             }
 
-            gym.Trends = finalTrends;
+            gym.Trends = result;
             gym.SupportedGender = CalculateSupportedGenderForGym(gym);
             gym.SupportedTimeType = CalculateSupportedGymTimeTypeForGym(gym);
             gym.GymTotalWorkingHour = CalculateGymTotalTimeForGym(gym);
         }
 
 
+        /// <summary>
+        /// for build gender working hours
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="gymLevel"></param>
+        /// <returns></returns>
+        private List<GymTrendWorkingHour> BuildGenderWorkingHours(
+        List<GymTrendWorkingHourUpdate> input,
+        GymLevel gymLevel)
+        {
+            var result = InitWeek();
 
+            if (input == null || input.Count == 0)
+                return result;
+
+            foreach (var day in result)
+            {
+                var source = input.FirstOrDefault(x => x.DayOfWeek == day.DayOfWeek);
+                if (source == null || source.Sessions == null)
+                    continue;
+
+                day.Sessions = BuildAndValidateSessions(source.Sessions, gymLevel);
+            }
+
+            return result;
+        }
+
+
+        /// <summary>
+        /// use for build and validate sessions
+        /// </summary>
+        /// <param name="sessions"></param>
+        /// <param name="gymLevel"></param>
+        /// <returns></returns>
+        private List<GymSession> BuildAndValidateSessions(
+        List<GymSessionUpdate> sessions,
+        GymLevel gymLevel)
+        {
+            if (sessions == null || sessions.Count == 0)
+                return null;
+
+            var result = new List<GymSession>();
+
+            foreach (var s in sessions)
+            {
+                var session = new GymSession
+                {
+                    GymSessionId = Guid.NewGuid().ToString("N"),
+                    Price = s.Price,
+                    TimeType = s.TimeType,
+                    From = s.From,
+                    To = s.To,
+                    Capacity = s.Capacity
+                };
+
+                ValidateSessionPrice(session.Price, gymLevel);
+                ValidateSessionByType(session);
+
+                result.Add(session);
+            }
+
+            ValidateSessionOverlap(result);
+
+            return result;
+        }
+
+        /// <summary>
+        /// use for check time overlap in sessions in one trend day
+        /// </summary>
+        /// <param name="sessions"></param>
+        /// <exception cref="BadRequestException"></exception>
+        private void ValidateSessionOverlap(List<GymSession> sessions)
+        {
+            var ordered = sessions.OrderBy(x => x.From).ToList();
+
+            for (int i = 0; i < ordered.Count - 1; i++)
+            {
+                if (ordered[i].To > ordered[i + 1].From)
+                    throw new BadRequestException("در یک روز، سشن‌های یک رشته نباید همپوشانی زمانی داشته باشند");
+            }
+        }
+
+        /// <summary>
+        /// use for validate session by type
+        /// </summary>
+        /// <param name="session"></param>
+        /// <exception cref="BadRequestException"></exception>
+        private void ValidateSessionByType(GymSession session)
+        {
+            if (session.TimeType == GymTimeType.FreeTime)
+            {
+                if (session.From >= session.To)
+                    throw new BadRequestException("زمان شروع باید کمتر از زمان پایان باشد");
+
+                if (session.Capacity != null)
+                    throw new BadRequestException("FreeTime نباید ظرفیت داشته باشد");
+            }
+
+            if (session.TimeType == GymTimeType.Session)
+            {
+                ValidateSessionTime(session);
+
+                if (session.Capacity == null || session.Capacity <= 0)
+                    throw new BadRequestException(" سانس باید ظرفیت معتبر داشته باشد");
+            }
+        }
+
+
+        /// <summary>
+        /// use for get available durations 
+        /// </summary>
+        private static readonly HashSet<long> AllowedSessionDurations =
+        new()
+        {
+            60,    // 1 hour
+            90,    // 1.5 hour
+            120,   // 2 hour
+            180    // 3 hour
+        };
+
+
+        /// <summary>
+        /// use for validate session time
+        /// </summary>
+        /// <param name="session"></param>
+        /// <exception cref="BadRequestException"></exception>
+        private void ValidateSessionTime(GymSession session)
+        {
+            if (session.From >= session.To)
+                throw new BadRequestException("زمان شروع باید کمتر از زمان پایان باشد");
+
+            var duration = session.To - session.From;
+
+            if (!AllowedSessionDurations.Contains(duration))
+                throw new BadRequestException("مدت زمان هر سشن فقط می‌تواند 1، 1.5، 2 یا 3 ساعت باشد");
+        }
+
+
+        /// <summary>
+        /// use for check session price based on gym level
+        /// </summary>
+        /// <param name="price"></param>
+        /// <param name="gymLevel"></param>
+        /// <exception cref="NotFoundException"></exception>
+        /// <exception cref="BadRequestException"></exception>
+        private void ValidateSessionPrice(decimal price, GymLevel gymLevel)
+        {
+            var gymSetting = _gymLevelSettings.FirstOrDefault(q => q.Level == gymLevel)
+                ?? throw new NotFoundException("Gym Level not found!");
+
+            if (price < gymSetting.FromPrice || price > gymSetting.ToPrice)
+                throw new BadRequestException("قیمت تعیین شده خارج از سطح باشگاه می‌باشد");
+        }
+
+
+        /// <summary>
+        /// use for calculate supported gender for gym
+        /// </summary>
+        /// <param name="gym"></param>
+        /// <returns></returns>
         private List<Gender> CalculateSupportedGenderForGym(Gym gym)
         {
             var result = new List<Gender>();
 
-            var hasMen = gym.Trends.Any(q => q.Men.IsActive == true && q.Men.WorkingHours != null);
-            if (hasMen) { result.Add(Gender.Male); }
-            var hasWomenMen = gym.Trends.Any(q => q.Women.IsActive == true && q.Women.WorkingHours != null);
-            if (hasWomenMen) { result.Add(Gender.Female); }
+            if (gym.Trends == null || gym.Trends.Count == 0)
+                return result;
+
+            var hasMen = gym.Trends.Any(t =>
+                t.Men != null &&
+                t.Men.Any(d => d.Sessions != null && d.Sessions.Count > 0));
+
+            if (hasMen)
+                result.Add(Gender.Male);
+
+            var hasWomen = gym.Trends.Any(t =>
+                t.Women != null &&
+                t.Women.Any(d => d.Sessions != null && d.Sessions.Count > 0));
+
+            if (hasWomen)
+                result.Add(Gender.Female);
 
             return result;
         }
 
+
+        /// <summary>
+        /// use for calculate supported gym time type for gym
+        /// </summary>
+        /// <param name="gym"></param>
+        /// <returns></returns>
         private List<GymTimeType> CalculateSupportedGymTimeTypeForGym(Gym gym)
         {
             var result = new List<GymTimeType>();
 
-            var hasFreeTimeInMen = gym.Trends.Any(q => q.Men.IsActive == true && q.Men.WorkingHours.Any(q => q.Sessions.Any(q => q.TimeType == GymTimeType.FreeTime)));
-            var hasFreeTimeInWomen = gym.Trends.Any(q => q.Women.IsActive == true && q.Women.WorkingHours.Any(q => q.Sessions.Any(q => q.TimeType == GymTimeType.FreeTime)));
-            if (hasFreeTimeInMen || hasFreeTimeInWomen) result.Add(GymTimeType.FreeTime);
-
-            var hasSessionInMen = gym.Trends.Any(q => q.Men.IsActive == true && q.Men.WorkingHours.Any(q => q.Sessions.Any(q => q.TimeType == GymTimeType.Session)));
-            var hasSessionInWomen = gym.Trends.Any(q => q.Women.IsActive == true && q.Women.WorkingHours.Any(q => q.Sessions.Any(q => q.TimeType == GymTimeType.Session)));
-            if (hasSessionInMen || hasSessionInWomen) result.Add(GymTimeType.FreeTime);
-
-
-            return result;
-        }
-
-
-        private List<GymTotalWorkingHour> CalculateGymTotalTimeForGym(Gym gym)
-        {
-
-            var result = InitTotalWeek();
-            foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
-            {
-                var minInMen = gym.Trends.Where(q => q.Men.IsActive == true).Min(q => q.Men.WorkingHours.Select(q => q).Where( q=> q.DayOfWeek == day));
-
-
-
-            }
-            return result;
-        }
-
-
-        private GenderWorkingHours BuildGenderWorkingHours(
-        GenderWorkingHours input,
-        Gender gender)
-        {
-            var result = new GenderWorkingHours
-            {
-                IsActive = input != null ? input.IsActive : false,
-                WorkingHours = NormalizeWeek(input?.WorkingHours)
-            };
-
-            if (!result.IsActive)
+            if (gym.Trends == null || gym.Trends.Count == 0)
                 return result;
 
+            var allSessions = gym.Trends
+                .SelectMany(t => (t.Men ?? new List<GymTrendWorkingHour>())
+                    .Concat(t.Women ?? new List<GymTrendWorkingHour>()))
+                .Where(d => d.Sessions != null)
+                .SelectMany(d => d.Sessions)
+                .ToList();
+
+            if (allSessions.Any(s => s.TimeType == GymTimeType.FreeTime))
+                result.Add(GymTimeType.FreeTime);
+
+            if (allSessions.Any(s => s.TimeType == GymTimeType.Session))
+                result.Add(GymTimeType.Session);
+
             return result;
         }
 
 
-        //private bool HasAnyOpenTime(GymTrendWorkingHour day)
-        //{
-        //    if (day.TimeType == GymTimeType.FreeTime && day.FreeTime != null)
-        //        return true;
+        /// <summary>
+        /// use for calculate gym total time for gym
+        /// </summary>
+        /// <param name="gym"></param>
+        /// <returns></returns>
+        private List<GymTotalWorkingHour> CalculateGymTotalTimeForGym(Gym gym)
+        {
+            var result = InitTotalWeek();
 
-        //    if (day.TimeType == GymTimeType.Session && day.Sessions?.Any() == true)
-        //        return true;
+            if (gym.Trends == null || gym.Trends.Count == 0)
+                return result;
 
-        //    return false;
-        //}
+            foreach (var day in result)
+            {
+                var daySessions = gym.Trends
+                    .SelectMany(t => (t.Men ?? new List<GymTrendWorkingHour>())
+                        .Concat(t.Women ?? new List<GymTrendWorkingHour>()))
+                    .Where(d => d.DayOfWeek == day.DayOfWeek && d.Sessions != null)
+                    .SelectMany(d => d.Sessions)
+                    .ToList();
 
+                if (!daySessions.Any())
+                {
+                    day.IsClosed = true;
+                    day.From = null;
+                    day.To = null;
+                    continue;
+                }
 
-        //private void MergeTotalDay(GymTrendWorkingHour total, GymTrendWorkingHour source)
-        //{
-        //    if (source.TimeType == GymTimeType.FreeTime)
-        //    {
-        //        total.TimeType = GymTimeType.FreeTime;
-        //        total.FreeTime ??= new FreeTimeRange();
+                day.IsClosed = false;
+                day.From = daySessions.Min(s => s.From);
+                day.To = daySessions.Max(s => s.To);
+            }
 
-        //        total.FreeTime.From = total.FreeTime.From == 0
-        //            ? source.FreeTime.From
-        //            : Math.Min(total.FreeTime.From, source.FreeTime.From);
-
-        //        total.FreeTime.To = Math.Max(total.FreeTime.To, source.FreeTime.To);
-        //    }
-        //    else
-        //    {
-        //        total.TimeType = GymTimeType.Session;
-        //        total.Sessions ??= new List<GymSession>();
-
-        //        total.Sessions.AddRange(source.Sessions);
-        //    }
-        //}
+            return result;
+        }
 
 
         /// <summary>
@@ -250,7 +406,10 @@ namespace XFit.Services._Gym
             return result;
         }
 
-
+        /// <summary>
+        /// use for init total week working hours
+        /// </summary>
+        /// <returns></returns>
         private List<GymTotalWorkingHour> InitTotalWeek()
         {
             var result = new List<GymTotalWorkingHour>();
@@ -268,33 +427,6 @@ namespace XFit.Services._Gym
 
             return result;
         }
-
-
-        /// <summary>
-        /// this method use for normalize week working hours
-        /// </summary>
-        /// <param name="input"></param>
-        /// <returns></returns>
-        /// 
-        private List<GymTrendWorkingHour> NormalizeWeek(List<GymTrendWorkingHour> input)
-        {
-            var result = InitWeek();
-
-            if (input == null)
-                return result;
-
-            foreach (var day in result)
-            {
-                var source = input.FirstOrDefault(x => x.DayOfWeek == day.DayOfWeek);
-                if (source == null) continue;
-
-                day.Sessions = source.Sessions;
-            }
-
-            return result;
-        }
-
-
 
 
         /// <summary>
@@ -365,62 +497,178 @@ namespace XFit.Services._Gym
                 .FirstOrDefaultAsync();
 
             if (gym == null)
-                throw new Exception("Gym not found");
+                throw new BadRequestException("Gym not found");
 
-            if (gym.GymOwnerPublicKey != whois)
-                throw new Exception("Access denied");
+            UpdateGymBaseInfo(gym, update);
 
+            await UpdateGymFacilities(gym, update.FacilityIds);
 
-            if (gym.Title != update.Title.Trim())
-            {
-                gym.Title = update.Title.Trim();
-                gym.Slug = CreateSlug(gym.Slug);
-            }
-
-            gym.Description = update.Description.Trim();
-            //gym.Level = update.Level;
-            gym.Address = CreateAddressInfo(update.Address);
-            gym.Contact = update.Contact;
-            gym.Images = update.Images;
-
-
-
-            if (update.FacilityIds != null && update.FacilityIds.Any())
-            {
-                await GetFacilitiesAsync(gym, update.FacilityIds);
-            }
-            else
-            {
-                gym.Facilities = [];
-            }
-
-            if(gym.Price != update.Price)
-            {
-                if (gym.PriceTrackerDatetime > DateTime.UtcNow.AddDays(-7))
-                    throw new BadRequestException("ویرایش قیمت فقط یکبار در هفته مجاز می باشد");
-                ValidatePriceWithLevel(update.Price,gym.Level);
-                gym.Price = update.Price;
-                gym.PriceTrackerDatetime = DateTime.UtcNow;
-            }
-
-
-            if (update.Trends != null && update.Trends.Any())
-            {
-                await HandleGymTrends(gym, update.Trends);
-            }
-            else
-            {
-                gym.Trends = [];
-                gym.SupportedGender = [];
-                gym.GymTotalWorkingHour = InitTotalWeek();
-            }
-
+            //await UpsertGymTrends(gym, update.Trends);
             gym.State = GymState.NotVerified;
             gym.ModifiedMoment = DateTime.UtcNow;
 
             await _gymRepository.ReplaceOneAsync(gym);
 
             return ConvertToResult(gym);
+        }
+
+
+        /// <summary>
+        /// use for update gym base info
+        /// </summary>
+        /// <param name="gym"></param>
+        /// <param name="update"></param>
+        private void UpdateGymBaseInfo(Gym gym, EditGymUpdate update)
+        {
+            if (!string.IsNullOrWhiteSpace(update.Title) &&
+                gym.Title != update.Title.Trim())
+            {
+                gym.Title = update.Title.Trim();
+                gym.Slug = CreateSlug(gym.Title);
+            }
+
+            gym.Description = update.Description?.Trim();
+            gym.Address = CreateAddressInfo(update.Address);
+            gym.Contact = update.Contact;
+            gym.Images = update.Images;
+        }
+
+
+        /// <summary>
+        /// use for update gym facilities
+        /// </summary>
+        /// <param name="gym"></param>
+        /// <param name="facilityIds"></param>
+        /// <returns></returns>
+        private async Task UpdateGymFacilities(Gym gym, List<string> facilityIds)
+        {
+            if (facilityIds == null)
+            {
+                gym.Facilities = [];
+                return;
+            }
+
+            if (facilityIds.Any())
+                await GetFacilitiesAsync(gym, facilityIds);
+            else
+                gym.Facilities = [];
+        }
+
+
+        /// <summary>
+        /// use for upsert gym trends
+        /// </summary>
+        /// <param name="update"></param>
+        /// <param name="whois"></param>
+        /// <returns></returns>
+        /// <exception cref="BadRequestException"></exception>
+        public async Task<GymResult> UpsertGymTrendsAsync(
+         UpsertGymTrendsUpdate update,
+         string whois)
+        {
+            var gym = await _gymRepository.AsQueryable()
+                .Where(x => x.GymId == update.GymId &&
+                            x.GymOwnerPublicKey == whois)
+                .FirstOrDefaultAsync();
+
+            if(gym.GymOwnerLastUpdateMoment.AddDays(7) > DateTime.UtcNow)
+                throw new BadRequestException("شما فقط هر هفته یکبار می‌توانید تغییرات رشته‌های ورزشی را اعمال کنید");
+
+            if (gym == null)
+                throw new BadRequestException("Gym not found or access denied");
+
+            await ApplyGymTrendsUpsert(gym, update.Trends);
+
+            //gym.State = GymState.NotVerified;
+            gym.ModifiedMoment = DateTime.UtcNow;
+            gym.GymOwnerLastUpdateMoment = DateTime.UtcNow;
+
+            await _gymRepository.ReplaceOneAsync(gym);
+
+            return ConvertToResult(gym);
+        }
+
+
+        /// <summary>
+        /// use for apply gym trends upsert
+        /// </summary>
+        /// <param name="gym"></param>
+        /// <param name="updates"></param>
+        /// <returns></returns>
+        /// <exception cref="BadRequestException"></exception>
+        private async Task ApplyGymTrendsUpsert(
+         Gym gym,
+         List<GymTrendInfoUpdate> updates)
+        {
+            if (updates == null)
+            {
+                gym.Trends = [];
+                gym.SupportedGender = [];
+                gym.SupportedTimeType = [];
+                gym.GymTotalWorkingHour = InitTotalWeek();
+                return;
+            }
+
+            updates = updates
+                .Where(x => !string.IsNullOrWhiteSpace(x.GymTrendId))
+                .DistinctBy(x => x.GymTrendId)
+                .ToList();
+
+            var trendTitles = await GetGymTrendsAsync(
+                updates.Select(x => x.GymTrendId).ToList());
+
+            var titleMap = trendTitles.ToDictionary(x => x.GymTrendId, x => x.Title);
+
+            var finalTrends = new List<GymTrendInfo>();
+
+            foreach (var update in updates)
+            {
+                if (!titleMap.ContainsKey(update.GymTrendId))
+                    throw new BadRequestException($"رشته ورزشی {update.GymTrendId} نامعتبر است");
+
+                var existing = gym.Trends?
+                    .FirstOrDefault(x => x.GymTrendId == update.GymTrendId);
+
+                var trend = BuildOrUpdateTrend(
+                    existing,
+                    update,
+                    titleMap[update.GymTrendId],
+                    gym.Level);
+
+                finalTrends.Add(trend);
+            }
+
+            gym.Trends = finalTrends;
+            gym.SupportedGender = CalculateSupportedGenderForGym(gym);
+            gym.SupportedTimeType = CalculateSupportedGymTimeTypeForGym(gym);
+            gym.GymTotalWorkingHour = CalculateGymTotalTimeForGym(gym);
+        }
+
+
+        /// <summary>
+        /// use for build or update trend
+        /// </summary>
+        /// <param name="existing"></param>
+        /// <param name="update"></param>
+        /// <param name="title"></param>
+        /// <param name="gymLevel"></param>
+        /// <returns></returns>
+        private GymTrendInfo BuildOrUpdateTrend(
+        GymTrendInfo existing,
+        GymTrendInfoUpdate update,
+        string title,
+        GymLevel gymLevel)
+        {
+            var trend = existing ?? new GymTrendInfo
+            {
+                GymTrendId = update.GymTrendId
+            };
+
+            trend.Title = title;
+            trend.Men = BuildGenderWorkingHours(update.Men, gymLevel);
+            trend.Women = BuildGenderWorkingHours(update.Women, gymLevel);
+
+            return trend;
         }
 
 
@@ -852,6 +1100,29 @@ namespace XFit.Services._Gym
         }
 
 
+        public async Task<GymAdminResult> UpsertGymTrendsByAdminAsync(
+         UpsertGymTrendsUpdateByAdmin update)
+        {
+            var gym = await _gymRepository.AsQueryable()
+                .Where(x => x.GymId == update.GymId &&
+                            x.GymOwnerPublicKey == update.GymOwnerPublicKey)
+                .FirstOrDefaultAsync();
+
+       
+            if (gym == null)
+                throw new BadRequestException("Gym not found or access denied");
+
+            await ApplyGymTrendsUpsert(gym, update.Trends);
+
+            gym.ModifiedMoment = DateTime.UtcNow;
+            gym.GymOwnerLastUpdateMoment = DateTime.UtcNow;
+
+            await _gymRepository.ReplaceOneAsync(gym);
+
+            return ConvertToAdminResult(gym);
+        }
+
+
         private GymAdminResult ConvertToAdminResult(GymResult gymResult, string gymOwnerPublicKey)
         {
             return new GymAdminResult
@@ -1023,7 +1294,7 @@ namespace XFit.Services._Gym
                 var query = _gymAttendanceRepository.AsQueryable()
                     .Where(x =>
                         x.GymId == gymId &&
-                        x.PaymentState == GymAttendanceState.Paid &&
+                        x.PaymentState == GymAttendanceState.Used &&
                         x.GivenRate.HasValue
                     );
 
@@ -1265,4 +1536,68 @@ namespace XFit.Services._Gym
 //    }
 
 //    return result;
+//}
+//public async Task<GymResult> EditGymAsync(EditGymUpdate update, string whois)
+//{
+//    var gym = await _gymRepository.AsQueryable()
+//        .Where(x => x.GymId == update.GymId && x.GymOwnerPublicKey == whois)
+//        .FirstOrDefaultAsync();
+
+//    if (gym == null)
+//        throw new Exception("Gym not found");
+
+//    if (gym.GymOwnerPublicKey != whois)
+//        throw new Exception("Access denied");
+
+
+//    if (gym.Title != update.Title.Trim())
+//    {
+//        gym.Title = update.Title.Trim();
+//        gym.Slug = CreateSlug(gym.Slug);
+//    }
+
+//    gym.Description = update.Description.Trim();
+//    //gym.Level = update.Level;
+//    gym.Address = CreateAddressInfo(update.Address);
+//    gym.Contact = update.Contact;
+//    gym.Images = update.Images;
+
+
+
+//    if (update.FacilityIds != null && update.FacilityIds.Any())
+//    {
+//        await GetFacilitiesAsync(gym, update.FacilityIds);
+//    }
+//    else
+//    {
+//        gym.Facilities = [];
+//    }
+
+//    if (gym.Price != update.Price)
+//    {
+//        if (gym.PriceTrackerDatetime > DateTime.UtcNow.AddDays(-7))
+//            throw new BadRequestException("ویرایش قیمت فقط یکبار در هفته مجاز می باشد");
+//        ValidatePriceWithLevel(update.Price, gym.Level);
+//        gym.Price = update.Price;
+//        gym.PriceTrackerDatetime = DateTime.UtcNow;
+//    }
+
+
+//    if (update.Trends != null && update.Trends.Any())
+//    {
+//        await HandleGymTrends(gym, update.Trends);
+//    }
+//    else
+//    {
+//        gym.Trends = [];
+//        gym.SupportedGender = [];
+//        gym.GymTotalWorkingHour = InitTotalWeek();
+//    }
+
+//    gym.State = GymState.NotVerified;
+//    gym.ModifiedMoment = DateTime.UtcNow;
+
+//    await _gymRepository.ReplaceOneAsync(gym);
+
+//    return ConvertToResult(gym);
 //}

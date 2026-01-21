@@ -11,14 +11,14 @@ namespace XFit.Services._Gym
         // gymOnwer side
         Task<GymResult> AddGymAsync(AddGymUpdate update, string gymOwnerPublicKey);
         Task<GymResult> EditGymAsync(EditGymUpdate update, string gymOwnerPublicKey);
-        Task<GymListResult> GetAllGymsAsync(GymSimpleFilter filter, string whois); 
-        
+        Task<GymListResult> GetAllGymsAsync(GymSimpleFilter filter, string whois);
+        Task<GymResult> UpsertGymTrendsAsync(UpsertGymTrendsUpdate update, string whois);
 
 
         //client
         Task<GymResult> GetOneGymAsync(GymIdUpdate update);
         Task<GymListLightResult> GetGymsWithFilterAsync(GymFilter update);
-        Task<GymFullResult> GetGymDataBySlugAsync(string slug); 
+        Task<GymFullResult> GetGymDataBySlugAsync(string slug);
 
 
         //admin side
@@ -26,7 +26,7 @@ namespace XFit.Services._Gym
         Task<GymAdminResult> AddGymByAdminAsync(AddGymByAdminUpdate update);
         Task<GymAdminResult> EditGymByAdminAsync(EditGymByAdminUpdate update);
         Task<GymAdminResult> RemoveGymByAdminAsync(GymIdUpdate gymIdUpdate);
-
+        Task<GymAdminResult> UpsertGymTrendsByAdminAsync(UpsertGymTrendsUpdateByAdmin update);
 
         // internal 
         Task<Gym> GetOneGymForInternalUsageAsync(string gymId);

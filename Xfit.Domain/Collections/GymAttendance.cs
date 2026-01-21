@@ -19,7 +19,9 @@ namespace Xfit.Domain.Collections
         public string GymTrendTitle { get; set; }
         public string GymOwnerPublicKey { get; set; }
         public string GymAddress { get; set; }
-        public string GymImageUrl { get; set; } 
+        public string GymImageUrl { get; set; }
+        public GymTimeType GymTimeType { get; set; }
+        public long ClientStartTime { get; set; } 
 
 
         public string Notes { get; set; }
@@ -33,5 +35,5 @@ namespace Xfit.Domain.Collections
         public decimal? GivenRate { get; set; } = null;
     }
 
-    public enum GymAttendanceState { Pending, Paid, Fail };
+    public enum GymAttendanceState { Reserved, Used, Expired };
 }
