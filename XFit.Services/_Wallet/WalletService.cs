@@ -17,6 +17,15 @@ namespace XFit.Services._Wallet
         IWithdrawalRepository _withdrawalRepository,
         IGymAttendanceRepository _gymAttendanceRepository) : IWalletService, IScopedDependency
     {
+
+
+        /// <summary>
+        /// use for create or get wallet for users in each role
+        /// </summary>
+        /// <param name="whois"></param>
+        /// <param name="userRole"></param>
+        /// <returns></returns>
+        /// <exception cref="BadRequestException"></exception>
         public async Task<WalletResult> GetOrCreateWalletAsync(string whois, string userRole)
         {
 
@@ -43,6 +52,12 @@ namespace XFit.Services._Wallet
 
         }
 
+
+        /// <summary>
+        /// use for make wallet should update true for queue
+        /// </summary>
+        /// <param name="publicKey"></param>
+        /// <returns></returns>
         public async Task MakeWalletShouldUpdateAsync(string publicKey)
         {
             var filter = Builders<Wallet>.Filter.Eq(q => q.WalletId, publicKey);
@@ -50,6 +65,12 @@ namespace XFit.Services._Wallet
             await _walletRepository.FindOneAndUpdateAsync(filter, update);
         }
 
+
+        /// <summary>
+        /// use for update should update wallets
+        /// </summary>
+        /// <param name="publicKeys"></param>
+        /// <returns></returns>
         public async Task MakeWalletShouldUpdateAsync(List<string> publicKeys)
         {
             var filter = Builders<Wallet>.Filter.In(q => q.WalletId, publicKeys);
@@ -57,6 +78,14 @@ namespace XFit.Services._Wallet
             await _walletRepository.UpdateManyAsync(filter, update);
         }
 
+
+        /// <summary>
+        /// use for initialize wallet
+        /// </summary>
+        /// <param name="publicKey"></param>
+        /// <param name="userRole"></param>
+        /// <returns></returns>
+        /// <exception cref="BaseException"></exception>
         public async Task InitWalletAsync(string publicKey, UserRole userRole)
         {
             try
@@ -82,6 +111,11 @@ namespace XFit.Services._Wallet
 
         }
 
+
+        /// <summary>
+        /// sync single wallet balance
+        /// </summary>
+        /// <returns></returns>
         public async Task SyncWalletAsync()
         {
             var wallet = await _walletRepository.AsQueryable()
@@ -95,6 +129,14 @@ namespace XFit.Services._Wallet
 
         }
 
+
+        /// <summary>
+        /// for get  client transactions
+        /// </summary>
+        /// <param name="publicKey"></param>
+        /// <param name="pagination"></param>
+        /// <returns></returns>
+        /// <exception cref="BadRequestException"></exception>
         public async Task<ClientTransactionListResult> GetClientTransactionsAsync(
         string publicKey,
         Pagination pagination)
@@ -142,6 +184,14 @@ namespace XFit.Services._Wallet
             };
         }
 
+
+        /// <summary>
+        /// use for get gym owner transactions
+        /// </summary>
+        /// <param name="publicKey"></param>
+        /// <param name="pagination"></param>
+        /// <returns></returns>
+        /// <exception cref="BadRequestException"></exception>
         public async Task<GymOwnerTransactionListResult> GetGymOwnerTransactionsAsync(
         string publicKey,
         Pagination pagination)
@@ -191,7 +241,11 @@ namespace XFit.Services._Wallet
         }
 
 
-
+        /// <summary>
+        /// specify wallet for sync by role
+        /// </summary>
+        /// <param name="wallet"></param>
+        /// <returns></returns>
         private async Task SyncWalletAsync(Wallet wallet)
         {
             if (wallet.Role == UserRole.Client)
@@ -201,6 +255,12 @@ namespace XFit.Services._Wallet
 
         } 
 
+
+        /// <summary>
+        /// use for update gym owner wallet
+        /// </summary>
+        /// <param name="whois"></param>
+        /// <returns></returns>
         private async Task<WalletResult> SyncGymOwnerWalletAsync(string whois)
         {
             var totalIncome = await _gymAttendanceRepository.AsQueryable()
@@ -239,6 +299,12 @@ namespace XFit.Services._Wallet
             };
         }
 
+
+        /// <summary>
+        /// use for update clinet wallet
+        /// </summary>
+        /// <param name="whois"></param>
+        /// <returns></returns>
         private async Task<WalletResult> SyncClientWalletAsync(string whois)
         {
             var clientDeposits = await _depositRepository.AsQueryable()
@@ -246,7 +312,7 @@ namespace XFit.Services._Wallet
              .SumAsync(q => q.Amount);
 
             var clientAttendance = await _gymAttendanceRepository.AsQueryable()
-                .Where(q => q.ClientPublicKey == whois && q.PaymentState == GymAttendanceState.Paid).SumAsync(q => q.Price);
+                .Where(q => q.ClientPublicKey == whois).SumAsync(q => q.Price);
 
 
             var balance = clientDeposits - clientAttendance;

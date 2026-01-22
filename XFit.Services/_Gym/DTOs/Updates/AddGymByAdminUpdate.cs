@@ -39,7 +39,7 @@ namespace XFit.Services._Gym.DTOs.Updates
         public AddressInfoUpdate Address { get; set; }
         public Contact Contact { get; set; } = null;
         public List<GymImage> Images { get; set; } = null;
-        public List<GymTrendInfoUpdate> Trends { get; set; } = null;
+        //public List<GymTrendInfoUpdate> Trends { get; set; } = null;
         public List<string> FacilityIds { get; set; } = null;
     }
 

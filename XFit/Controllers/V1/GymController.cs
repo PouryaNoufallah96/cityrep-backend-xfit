@@ -18,12 +18,13 @@ namespace XFit.Controllers.V1
     [Route("api/v{version:apiVersion}/[controller]")]
     public class GymController(IGymService _gymService) : ApiBaseController
     {
+
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(Summary = "Add a new gym", Tags = ["GO-Gym"])]
         public async Task<GymResult> AddGymAsync(AddGymUpdate update)
-       => await _gymService.AddGymAsync(update, PublicKey);
+        => await _gymService.AddGymAsync(update, PublicKey);
 
         [HttpPost("[action]")]
         [CustomRateLimit]
@@ -38,6 +39,12 @@ namespace XFit.Controllers.V1
         [SwaggerOperation(Summary = "Get all gyms for owner", Tags = ["GO-Gym"])]
         public async Task<GymListResult> GetAllGymsAsync(GymSimpleFilter filter)
             => await _gymService.GetAllGymsAsync(filter, PublicKey);
+        [HttpPost("[action]")]
+        [CustomRateLimit]
+        [Authorize]
+        [SwaggerOperation(Summary = "Upsert gym trend data", Tags = ["GO-Gym"])]
+        public async Task<GymResult> UpsertGymTrendsAsync(UpsertGymTrendsUpdate update)
+            => await _gymService.UpsertGymTrendsAsync(update, PublicKey);
 
 
         // ===== Client Side =====
@@ -91,6 +98,13 @@ namespace XFit.Controllers.V1
         [SwaggerOperation(Summary = "remove a gym by admin", Tags = ["A-Gym"])]
         public async Task<GymAdminResult> RemoveGymByAdminAsync(GymIdUpdate gymIdUpdate)
             => await _gymService.RemoveGymByAdminAsync(gymIdUpdate);
+
+        [HttpPost("[action]")]
+        [CustomRateLimit]
+        [Authorize]
+        [SwaggerOperation(Summary = "upsert gym trends data by admin", Tags = ["A-Gym"])]
+        public async Task<GymAdminResult> UpsertGymTrendsByAdminAsync(UpsertGymTrendsUpdateByAdmin update)
+            => await _gymService.UpsertGymTrendsByAdminAsync(update);
 
     }
 }

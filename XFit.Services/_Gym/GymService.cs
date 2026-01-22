@@ -83,6 +83,7 @@ namespace XFit.Services._Gym
             return address;
         }
 
+
         /// <summary>
         /// handle gym trends and working hours
         /// </summary>
@@ -200,6 +201,7 @@ namespace XFit.Services._Gym
             return result;
         }
 
+
         /// <summary>
         /// use for check time overlap in sessions in one trend day
         /// </summary>
@@ -215,6 +217,7 @@ namespace XFit.Services._Gym
                     throw new BadRequestException("در یک روز، سشن‌های یک رشته نباید همپوشانی زمانی داشته باشند");
             }
         }
+
 
         /// <summary>
         /// use for validate session by type
@@ -503,7 +506,6 @@ namespace XFit.Services._Gym
 
             await UpdateGymFacilities(gym, update.FacilityIds);
 
-            //await UpsertGymTrends(gym, update.Trends);
             gym.State = GymState.NotVerified;
             gym.ModifiedMoment = DateTime.UtcNow;
 
@@ -1033,7 +1035,7 @@ namespace XFit.Services._Gym
                 Address = update.Address,
                 Contact = update.Contact,
                 Images = update.Images,
-                Trends = update.Trends,
+                //Trends = update.Trends,
                 FacilityIds = update.FacilityIds
             }, update.GymOwnerPublicKey);
 
@@ -1100,6 +1102,12 @@ namespace XFit.Services._Gym
         }
 
 
+        /// <summary>
+        /// use for upsert gym trend data by admin
+        /// </summary>
+        /// <param name="update"></param>
+        /// <returns></returns>
+        /// <exception cref="BadRequestException"></exception>
         public async Task<GymAdminResult> UpsertGymTrendsByAdminAsync(
          UpsertGymTrendsUpdateByAdmin update)
         {
@@ -1123,6 +1131,12 @@ namespace XFit.Services._Gym
         }
 
 
+        /// <summary>
+        /// use for convert gym to admin result
+        /// </summary>
+        /// <param name="gymResult"></param>
+        /// <param name="gymOwnerPublicKey"></param>
+        /// <returns></returns>
         private GymAdminResult ConvertToAdminResult(GymResult gymResult, string gymOwnerPublicKey)
         {
             return new GymAdminResult
@@ -1146,6 +1160,13 @@ namespace XFit.Services._Gym
                 Slug = gymResult.Slug,
             };
         }
+
+
+        /// <summary>
+        ///  use for convert gym to admin result
+        /// </summary>
+        /// <param name="gymResult"></param>
+        /// <returns></returns>
         private GymAdminResult ConvertToAdminResult(Gym gymResult)
         {
             return new GymAdminResult
@@ -1254,6 +1275,15 @@ namespace XFit.Services._Gym
                 .AnyAsync(g => g.Trends.Any(t => t.GymTrendId == trendId));
         }
 
+
+        /// <summary>
+        /// use for update gym trend title
+        /// </summary>
+        /// <param name="trendId"></param>
+        /// <param name="newTitle"></param>
+        /// <returns></returns>
+        /// <exception cref="BadRequestException"></exception>
+        /// <exception cref="BaseException"></exception>
         public async Task UpdateGymTrendTitleAsync(string trendId, string newTitle)
         {
             if (string.IsNullOrWhiteSpace(trendId))
@@ -1283,6 +1313,14 @@ namespace XFit.Services._Gym
             }
         }
 
+
+        /// <summary>
+        /// use for sync rate with used attendance
+        /// </summary>
+        /// <param name="gymId"></param>
+        /// <returns></returns>
+        /// <exception cref="BadRequestException"></exception>
+        /// <exception cref="BaseException"></exception>
         public async Task SyncRateOfGymAsync(string gymId)
         {
 
@@ -1325,8 +1363,6 @@ namespace XFit.Services._Gym
         }
 
         #endregion
-
-
 
 
         /// <summary>
@@ -1388,8 +1424,6 @@ namespace XFit.Services._Gym
 
             return slug;
         }
-
-
     }
 }
 
