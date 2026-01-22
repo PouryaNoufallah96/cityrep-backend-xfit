@@ -21,13 +21,15 @@ namespace Xfit.Domain.Collections
         public string GymAddress { get; set; }
         public string GymImageUrl { get; set; }
         public GymTimeType GymTimeType { get; set; }
-        public long ClientStartTime { get; set; } 
+        public string GymSessionId { get; set; }
+        public decimal SessionPrice { get; set; }
 
+        public long GymStart { get; set; }
+        public long GymEnd { get; set; }
+        public long ClientStartTime { get; set; } 
 
         public string Notes { get; set; }
         public GymLevel Level { get; set; }
-        public decimal Price { get; set; }
-
         public DateTime? ExpirePaymentCode { get; set; }
         public GymAttendanceState PaymentState { get; set; }
         public DateTime? PaymentMoment { get; set; }

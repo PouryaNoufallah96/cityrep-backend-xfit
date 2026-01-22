@@ -132,6 +132,7 @@ namespace XFit.Services._Gym
             gym.SupportedGender = CalculateSupportedGenderForGym(gym);
             gym.SupportedTimeType = CalculateSupportedGymTimeTypeForGym(gym);
             gym.GymTotalWorkingHour = CalculateGymTotalTimeForGym(gym);
+            gym.WeekPrices = CalculateGymWeekTimeForGym(gym);
         }
 
 
@@ -387,6 +388,63 @@ namespace XFit.Services._Gym
 
             return result;
         }
+
+
+        /// <summary>
+        /// use for calculate gym week time for gym
+        /// </summary>
+        /// <param name="gym"></param>
+        /// <returns></returns>
+        private List<WeekPriceDetail> CalculateGymWeekTimeForGym(Gym gym)
+        {
+            var result = new List<WeekPriceDetail>();
+
+            if (gym.Trends == null || !gym.Trends.Any())
+                return result;
+
+            foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
+            {
+                var prices = new List<decimal>();
+
+                foreach (var trend in gym.Trends)
+                {
+                    // Men
+                    if (trend.Men != null)
+                    {
+                        var menDay = trend.Men.FirstOrDefault(x => x.DayOfWeek == day);
+                        if (menDay?.Sessions != null)
+                        {
+                            prices.AddRange(menDay.Sessions.Select(s => s.Price));
+                        }
+                    }
+
+                    // Women
+                    if (trend.Women != null)
+                    {
+                        var womenDay = trend.Women.FirstOrDefault(x => x.DayOfWeek == day);
+                        if (womenDay?.Sessions != null)
+                        {
+                            prices.AddRange(womenDay.Sessions.Select(s => s.Price));
+                        }
+                    }
+                }
+
+                if (!prices.Any())
+                    continue;
+
+                result.Add(new WeekPriceDetail
+                {
+                    DayOfWeek = day,
+                    MinPrice = prices.Min(),
+                    MaxPrice = prices.Max()
+                });
+            }
+
+            return result;
+        }
+
+
+
 
 
         /// <summary>
@@ -851,7 +909,10 @@ namespace XFit.Services._Gym
                 Facilities = gym.Facilities,
                 GymTotalWorkingHour = gym.GymTotalWorkingHour,
                 CreatedMoment = gym.CreatedMoment,
-                ModifiedMoment = gym.ModifiedMoment
+                ModifiedMoment = gym.ModifiedMoment,
+                WeekPrices = gym.WeekPrices,
+                Slug = gym.Slug,
+
             };
             var today = DateTime.UtcNow.Date;
             var next7Days = today.AddDays(7);
@@ -1078,6 +1139,7 @@ namespace XFit.Services._Gym
                        ModifiedMoment = gymResult.ModifiedMoment,
                        GymOwnerPublicKey = gymResult.GymOwnerPublicKey,
                        Slug = gymResult.Slug,
+                       WeekPrices = gymResult.WeekPrices
                    })
                    .ExecuteAsync(query);
 
@@ -1158,6 +1220,8 @@ namespace XFit.Services._Gym
                 ModifiedMoment = gymResult.ModifiedMoment,
                 GymOwnerPublicKey = gymOwnerPublicKey,
                 Slug = gymResult.Slug,
+                WeekPrices = gymResult.WeekPrices
+
             };
         }
 
@@ -1188,6 +1252,8 @@ namespace XFit.Services._Gym
                 ModifiedMoment = gymResult.ModifiedMoment,
                 GymOwnerPublicKey = gymResult.GymOwnerPublicKey,
                 Slug = gymResult.Slug,
+                WeekPrices = gymResult.WeekPrices
+
             };
         }
 
@@ -1397,7 +1463,8 @@ namespace XFit.Services._Gym
                 Rate = gym.Rate,
                 Slug = gym.Slug,
                 CreatedMoment = gym.CreatedMoment,
-                ModifiedMoment = gym.ModifiedMoment
+                ModifiedMoment = gym.ModifiedMoment,
+                WeekPrices = gym.WeekPrices
             };
         }
 

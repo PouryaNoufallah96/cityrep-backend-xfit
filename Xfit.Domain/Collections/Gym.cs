@@ -30,8 +30,9 @@ namespace Xfit.Domain.Collections
         public List<GymFacilityRef> Facilities { get; set; } = null;
 
         public decimal Rate { get; set; }
-        public decimal RateCount { get; set; } 
+        public decimal RateCount { get; set; }
 
+        public List<WeekPriceDetail> WeekPrices { get; set; } = new List<WeekPriceDetail>(); 
     }
 
     
@@ -99,6 +100,13 @@ namespace Xfit.Domain.Collections
     }
 
 
+    public class WeekPriceDetail
+    {
+        public DayOfWeek DayOfWeek { get; set; }
+        public decimal MinPrice { get; set; }
+        public decimal MaxPrice { get; set; } 
+    }
+     
     public class GymTotalWorkingHour
     {
         public DayOfWeek DayOfWeek { get; set; }

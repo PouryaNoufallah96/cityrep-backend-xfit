@@ -25,7 +25,7 @@ namespace XFit.Services._Gym.DTOs.Results
         public List<GymFacilityRef> Facilities { get; set; } = null;
         public GymState State { get; set; }
 
-
+        public List<WeekPriceDetail> WeekPrices { get; set; }
         public decimal Rate { get; set; }
     }
 
