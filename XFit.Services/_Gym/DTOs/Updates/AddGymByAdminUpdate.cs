@@ -9,7 +9,7 @@ namespace XFit.Services._Gym.DTOs.Updates
         public string Title { get; set; }
         public string Description { get; set; }
         public GymLevel Level { get; set; }
-        public decimal Price { get; set; } 
+        //public decimal Price { get; set; } 
         public AddressInfoUpdate Address { get; set; } 
         public Contact Contact { get; set; } = null;
         public List<GymImage> Images { get; set; } = null;

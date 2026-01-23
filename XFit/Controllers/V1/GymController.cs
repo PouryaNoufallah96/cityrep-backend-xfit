@@ -39,6 +39,7 @@ namespace XFit.Controllers.V1
         [SwaggerOperation(Summary = "Get all gyms for owner", Tags = ["GO-Gym"])]
         public async Task<GymListResult> GetAllGymsAsync(GymSimpleFilter filter)
             => await _gymService.GetAllGymsAsync(filter, PublicKey);
+
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
@@ -80,7 +81,7 @@ namespace XFit.Controllers.V1
 
         [CustomRateLimit]
         [HttpPost("[action]")]
-        [Authorize]
+        //[Authorize]
         [SwaggerOperation(Summary = "Add a gym by admin", Tags = ["A-Gym"])]
         public async Task<GymAdminResult> AddGymByAdminAsync(AddGymByAdminUpdate update)
             => await _gymService.AddGymByAdminAsync(update);

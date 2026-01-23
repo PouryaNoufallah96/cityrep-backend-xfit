@@ -160,7 +160,7 @@ namespace XFit.Services._Wallet
                 {
                     CreatedMoment = x.CreatedMoment,
                     Title = x.GymTitle,
-                    Price = x.Price,
+                    Price = x.SessionPrice,
                     Type = ClientTransactionType.GymAttendancePayment
                 });
 
@@ -216,7 +216,7 @@ namespace XFit.Services._Wallet
                 {
                     CreatedMoment = x.CreatedMoment,
                     Title = "انتقال به کیف پول",
-                    Price = x.Price,
+                    Price = x.SessionPrice,
                     Type = GymOwnerTransactionType.GymAttendancePayment
                 });
 
@@ -267,7 +267,7 @@ namespace XFit.Services._Wallet
                 .Where(q =>
                     q.GymOwnerPublicKey == whois &&
                     q.PaymentState == GymAttendanceState.Used)
-                .SumAsync(q => q.Price);
+                .SumAsync(q => q.SessionPrice);
 
             var withdrawalSums = await _withdrawalRepository.AsQueryable()
                 .Where(q =>
@@ -312,7 +312,7 @@ namespace XFit.Services._Wallet
              .SumAsync(q => q.Amount);
 
             var clientAttendance = await _gymAttendanceRepository.AsQueryable()
-                .Where(q => q.ClientPublicKey == whois).SumAsync(q => q.Price);
+                .Where(q => q.ClientPublicKey == whois).SumAsync(q => q.SessionPrice);
 
 
             var balance = clientDeposits - clientAttendance;
