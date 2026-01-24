@@ -59,7 +59,7 @@ namespace Xfit.Domain.Collections
     public class GymTrendInfo
     {
         public string GymTrendId { get; set; }
-        public string TrendIconUrl { get; set; } 
+        public string TrendIconUrl { get; set; }  
         public string Title { get; set; }
 
         public List<GymTrendWorkingHour> Men { get; set; } = null;
