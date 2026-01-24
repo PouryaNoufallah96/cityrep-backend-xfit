@@ -782,7 +782,8 @@ namespace XFit.Services._Gym
                 Description = g.Description,
                 Level = g.Level,
                 SupportedGender = g.SupportedGender,
-
+                Slug = g.Slug,
+                WeekPrices = g.WeekPrices,
                 Address = g.Address,
                 GymTotalWorkingHour = g.GymTotalWorkingHour,
 
