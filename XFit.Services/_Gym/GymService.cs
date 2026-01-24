@@ -860,7 +860,8 @@ namespace XFit.Services._Gym
                 Contact = g.Contact,
                 Images = g.Images,
                 Facilities = g.Facilities,
-
+                WeekPrices = g.WeekPrices,
+                Slug = g.Slug,  
                 Rate = g.Rate,
 
                 CreatedMoment = g.CreatedMoment,
