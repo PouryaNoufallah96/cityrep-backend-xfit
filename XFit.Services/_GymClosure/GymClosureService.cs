@@ -22,8 +22,18 @@ namespace XFit.Services._GymClosure
         public async Task<GymClosureResult> CreateAsync(GymClosureCreateUpdate update, string whois)
         {
 
-            if (await HasTimeConflictAsync(update.GymId, update.ClosureDate.ToDateTime(TimeOnly.MinValue), update.From, update.To))
+            whois = "4205c069298a44afbca0d314143788a1";
+
+
+              var closureDate = DateTime.SpecifyKind(
+                update.ClosureDate.ToDateTime(TimeOnly.MinValue),
+                DateTimeKind.Utc
+                );
+
+            if (await HasTimeConflictAsync(update.GymId, closureDate, update.From, update.To))
                 throw new ValidationException("خطا: در این تاریخ و ساعت، تعطیلی دیگری ثبت شده است.");
+
+          
 
             var gym = await _gymService.GetOneGymForInternalUsageAsync(update.GymId);
             if (gym.GymOwnerPublicKey != whois) throw new NotFoundException("باشگاه برای شما یافت نشد");
@@ -31,7 +41,7 @@ namespace XFit.Services._GymClosure
             var closure = new GymClosure
             {
                 GymId = update.GymId,
-                ClosureDate = update.ClosureDate.ToDateTime(TimeOnly.MinValue),
+                ClosureDate = closureDate,
                 DayOfWeek = update.ClosureDate.DayOfWeek,
                 IsAllDay = update.IsAllDay,
                 From = update.From,

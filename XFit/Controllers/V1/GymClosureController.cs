@@ -20,7 +20,7 @@ namespace XFit.Controllers.V1
 
         [HttpPost("[action]")]
         [CustomRateLimit]
-        [Authorize]
+        //[Authorize]
         [SwaggerOperation(Summary = "Create a gym closure", Tags = new[] { "GO-GymClosure" })]
         public async Task<GymClosureResult> CreateAsync(GymClosureCreateUpdate dto)
             => await _gymClosureService.CreateAsync(dto, PublicKey);
