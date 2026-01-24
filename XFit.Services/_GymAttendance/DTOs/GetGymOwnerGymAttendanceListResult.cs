@@ -37,6 +37,7 @@ namespace XFit.Services._GymAttendance.DTOs
         public GymLevel Level { get; set; }
         public DateTime? ExpirePaymentCode { get; set; }
         public GymAttendanceState GymAttendanceState { get; set; }
+        public DateTime SessionDate { get; set; } 
         public decimal? GivenRate { get; set; } = null;
     }
 }

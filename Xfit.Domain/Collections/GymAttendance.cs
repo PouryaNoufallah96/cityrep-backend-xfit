@@ -10,6 +10,7 @@ namespace Xfit.Domain.Collections
         public string GymAttendanceId { get; set; } = Guid.NewGuid().ToString("N");
         public string GymAttendanceReference { get; set; }
         public string ClientPublicKey { get; set; }
+        public string ClinetFullName { get; set; }
 
 
         // destination 
@@ -23,12 +24,12 @@ namespace Xfit.Domain.Collections
         public GymTimeType GymTimeType { get; set; }
         public string GymSessionId { get; set; }
         public decimal SessionPrice { get; set; }
-
         public long GymStart { get; set; }
         public long GymEnd { get; set; }
-        public long? ClientStartTime { get; set; } = null;
-        public string ClinetFullName { get; set; }
+        public DateTime SessionDate { get; set; } 
 
+
+        public long? ClientStartTime { get; set; } = null;
         public string Notes { get; set; }
         public GymLevel Level { get; set; }
         public DateTime? ExpirePaymentCode { get; set; }

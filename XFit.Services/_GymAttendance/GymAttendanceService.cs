@@ -112,11 +112,20 @@ namespace XFit.Services._GymAttendance
                 return baseDate.AddDays(diff).AddMinutes(toMinutes);
             }
 
-            var expireAt = GetSessionExpireTime(sessionDay.Value, session.To);
+            DateTime GetSessionDate(DayOfWeek day)
+            {
+                var baseDate = today;
 
+                var diff = ((int)day - (int)baseDate.DayOfWeek + 7) % 7;
+
+                return baseDate.AddDays(diff);
+            }
+
+            var expireAt = GetSessionExpireTime(sessionDay.Value, session.To);
 
             var newAttendance = new GymAttendance
             {
+                SessionDate = GetSessionDate(sessionDay.Value),
                 ClientPublicKey = whois,
                 ClinetFullName = CurrentRequestContext.FullName,
 
@@ -235,13 +244,13 @@ namespace XFit.Services._GymAttendance
                 GymEnd = x.GymEnd,
                 GymStart = x.GymStart,
                 GymOwnerPublicKey = x.GymOwnerPublicKey,
-                GymTimeType = x.GymTimeType
+                GymTimeType = x.GymTimeType,
+                SessionDate = x.SessionDate,
                 
             }).ToList();
 
             return result;
         }
-
 
 
         /// <summary>
@@ -349,10 +358,10 @@ namespace XFit.Services._GymAttendance
             var result = new GetGymOwnerGymAttendanceListResult();
 
             var query = _gymAttendanceRepository.AsQueryable()
-                .Where(x => x.GymOwnerPublicKey == whois);
+                .Where(x => x.GymOwnerPublicKey == whois).Where( q => q.GymAttendanceState == GymAttendanceState.Used);
 
-            if (update.States != null && update.States.Any())
-                query = query.Where(x => update.States.Contains(x.GymAttendanceState));
+            //if (update.States != null && update.States.Any())
+            //    query = query.Where(x => update.States.Contains(x.GymAttendanceState));
 
             if (update.Levels != null && update.Levels.Any())
                 query = query.Where(x => update.Levels.Contains(x.Level));
@@ -418,7 +427,8 @@ namespace XFit.Services._GymAttendance
                 GymImageUrl = x.GymImageUrl,
                 GymAddress = x.GymAddress,
                 CreatedMoment = x.CreatedMoment,
-                ModifiedMoment = x.ModifiedMoment
+                ModifiedMoment = x.ModifiedMoment,
+                SessionDate = x.SessionDate
             }).ToList();
 
             return result;
@@ -443,11 +453,11 @@ namespace XFit.Services._GymAttendance
             var balance = clientDeposits - clientAttendance;
             return balance;
         }
+       
         #endregion
 
 
         #region Admin 
-
         public async Task<MonjoFilteredResult<GetGymOwnerGymAttendanceResult>> GetAllForAdminAsync(MonjoQuery query)
         {
             try
@@ -485,6 +495,7 @@ namespace XFit.Services._GymAttendance
                        CreatedMoment = x.CreatedMoment,
                        ModifiedMoment = x.ModifiedMoment,
                        GymAddress = x.GymAddress,
+                       SessionDate = x.SessionDate,
                        GymImageUrl = x.GymImageUrl
                    })
                    .ExecuteAsync(query);

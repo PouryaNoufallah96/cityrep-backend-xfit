@@ -82,6 +82,7 @@ namespace Xfit.Domain.Collections
     public class GymTrendWorkingHour
     {
         public DayOfWeek DayOfWeek { get; set; }       
+        
         public List<GymSession> Sessions { get; set; }
     }
 
