@@ -107,20 +107,21 @@ namespace XFit.Services._Gym
                 .DistinctBy(t => t.GymTrendId)
                 .ToList();
 
-            var trendTitles = await GetGymTrendsAsync(trends.Select(t => t.GymTrendId).ToList());
-            var titleMap = trendTitles.ToDictionary(x => x.GymTrendId, x => x.Title);
+            var trendsData = await GetGymTrendsAsync(trends.Select(t => t.GymTrendId).ToList());
 
             var result = new List<GymTrendInfo>();
 
             foreach (var trendUpdate in trends)
             {
-                if (!titleMap.ContainsKey(trendUpdate.GymTrendId))
-                    throw new BadRequestException($"رشته ورزشی {trendUpdate.GymTrendId} نامعتبر است");
+
+                var td = trendsData
+                    .FirstOrDefault(t => t.GymTrendId == trendUpdate.GymTrendId) ?? throw new BadRequestException($"رشته ورزشی {trendUpdate.GymTrendId} نامعتبر است");
 
                 var trend = new GymTrendInfo
                 {
                     GymTrendId = trendUpdate.GymTrendId,
-                    Title = titleMap[trendUpdate.GymTrendId],
+                    Title = td.Title,
+                    TrendIconUrl = td.IconUrl,
                     Men = BuildGenderWorkingHours(trendUpdate.Men, gym.Level),
                     Women = BuildGenderWorkingHours(trendUpdate.Women, gym.Level)
                 };
@@ -631,7 +632,7 @@ namespace XFit.Services._Gym
                             x.GymOwnerPublicKey == whois)
                 .FirstOrDefaultAsync();
 
-            if(gym.GymOwnerLastUpdateMoment.AddDays(7) > DateTime.UtcNow)
+            if (gym.GymOwnerLastUpdateMoment.AddDays(7) > DateTime.UtcNow)
                 throw new BadRequestException("شما فقط هر هفته یکبار می‌توانید تغییرات رشته‌های ورزشی را اعمال کنید");
 
             if (gym == null)
@@ -674,17 +675,17 @@ namespace XFit.Services._Gym
                 .DistinctBy(x => x.GymTrendId)
                 .ToList();
 
-            var trendTitles = await GetGymTrendsAsync(
+            var trendsData = await GetGymTrendsAsync(
                 updates.Select(x => x.GymTrendId).ToList());
-
-            var titleMap = trendTitles.ToDictionary(x => x.GymTrendId, x => x.Title);
 
             var finalTrends = new List<GymTrendInfo>();
 
             foreach (var update in updates)
             {
-                if (!titleMap.ContainsKey(update.GymTrendId))
-                    throw new BadRequestException($"رشته ورزشی {update.GymTrendId} نامعتبر است");
+
+                var td = trendsData
+                    .FirstOrDefault(t => t.GymTrendId == update.GymTrendId) ?? throw new BadRequestException($"رشته ورزشی {update.GymTrendId} نامعتبر است");
+
 
                 var existing = gym.Trends?
                     .FirstOrDefault(x => x.GymTrendId == update.GymTrendId);
@@ -692,7 +693,8 @@ namespace XFit.Services._Gym
                 var trend = BuildOrUpdateTrend(
                     existing,
                     update,
-                    titleMap[update.GymTrendId],
+                    td.Title,
+                    td.IconUrl,
                     gym.Level);
 
                 finalTrends.Add(trend);
@@ -717,14 +719,17 @@ namespace XFit.Services._Gym
         GymTrendInfo existing,
         GymTrendInfoUpdate update,
         string title,
+        string iconUrl,
         GymLevel gymLevel)
         {
             var trend = existing ?? new GymTrendInfo
             {
-                GymTrendId = update.GymTrendId
-            };
+                GymTrendId = update.GymTrendId,
 
+            };
+            trend.TrendIconUrl = iconUrl;
             trend.Title = title;
+            trend.TrendIconUrl = existing?.TrendIconUrl;
             trend.Men = BuildGenderWorkingHours(update.Men, gymLevel);
             trend.Women = BuildGenderWorkingHours(update.Women, gymLevel);
 
@@ -1178,7 +1183,7 @@ namespace XFit.Services._Gym
                             x.GymOwnerPublicKey == update.GymOwnerPublicKey)
                 .FirstOrDefaultAsync();
 
-       
+
             if (gym == null)
                 throw new BadRequestException("Gym not found or access denied");
 
