@@ -136,7 +136,7 @@ namespace XFit.Services._GymOwner
                 await _gymOwnerRepository.ReplaceOneAsync(gymOwner);
                 await _walletService.InitWalletAsync(gymOwner.PublicKey, UserRole.GymOwner);
 
-                return _jwtService.Authenticate(gymOwner.PublicKey, "GymOwner", gymOwner.PhoneNumber, gymOwner.Permissions, gymOwner.SecurityStamp,gymOwner.FullName.HasValue());
+                return _jwtService.Authenticate(gymOwner.PublicKey, "GymOwner", gymOwner.PhoneNumber,gymOwner.FullName, gymOwner.Permissions, gymOwner.SecurityStamp,gymOwner.FullName.HasValue());
             }
             catch (BadRequestException ex)
             {
@@ -170,7 +170,7 @@ namespace XFit.Services._GymOwner
                 if (gymOwner.Status == UserStatus.Ban)
                     throw new BadRequestException(ExceptionMessages.UserIsBan);
 
-                return _jwtService.Authenticate(gymOwner.PublicKey, role, gymOwner.PhoneNumber, gymOwner.Permissions, gymOwner.SecurityStamp,gymOwner.FullName.HasValue());
+                return _jwtService.Authenticate(gymOwner.PublicKey, role, gymOwner.PhoneNumber, gymOwner.FullName,gymOwner.Permissions, gymOwner.SecurityStamp,gymOwner.FullName.HasValue());
             }
             catch (BadRequestException ex)
             {

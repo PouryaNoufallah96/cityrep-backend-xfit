@@ -7,6 +7,8 @@ namespace Xfit.Domain.Collections
     [MonjoCollectionName("Clients")]
     public class Client : CommonUser
     {
+        public string FirstName { get; set; }
+        public string LastName { get; set; } 
         public string FullName { get; set; }
         public Gender Gender { get; set; }
         public string Email { get; set; } = null;

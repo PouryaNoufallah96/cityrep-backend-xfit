@@ -62,7 +62,7 @@ namespace XFit.Services._Admin
             user = AddLoginDateToUser(user);
             await _adminRepository.ReplaceOneAsync(user);
 
-            return _jwtService.Authenticate(user.PublicKey, "Admin", user.UserName, user.Permissions, user.SecurityStamp);
+            return _jwtService.Authenticate(user.PublicKey, "Admin", "Admin", user.UserName, user.Permissions, user.SecurityStamp);
         }
 
 

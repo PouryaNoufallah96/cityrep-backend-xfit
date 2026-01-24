@@ -8,7 +8,8 @@
         UserType,
         SecurityStamp,
         PhoneNumber,
-        UserStatus
+        UserStatus,
+        FullName
     } 
 
     public enum UserType

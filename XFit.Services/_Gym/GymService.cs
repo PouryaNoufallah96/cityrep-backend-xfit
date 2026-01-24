@@ -1405,7 +1405,7 @@ namespace XFit.Services._Gym
                 var query = _gymAttendanceRepository.AsQueryable()
                     .Where(x =>
                         x.GymId == gymId &&
-                        x.PaymentState == GymAttendanceState.Used &&
+                        x.GymAttendanceState == GymAttendanceState.Used &&
                         x.GivenRate.HasValue
                     );
 

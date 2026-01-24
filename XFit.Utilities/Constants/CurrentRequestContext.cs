@@ -14,6 +14,7 @@
         public static string PublicKey => User?.PublicKey;
         public static string Role => User?.Role;
         public static string PhoneNumber => User?.PhoneNumber;
+        public static string FullName => User.FullName;
         public static string DisplayInfo => User?.DisplayInfo;
        
     }
@@ -23,6 +24,7 @@
         public string PublicKey { get; set; } = "system";
         public string Role { get; set; } = "system";
         public string Type { get; set; } = "system";
+        public string FullName { get; set; } 
         public IEnumerable<string> Permissions { get; set; } = [];
         public string PhoneNumber { get; set; }
         public string DisplayInfo => $"{Role} : {PhoneNumber}";

@@ -74,12 +74,12 @@ namespace XFit.Utilities.Services
             return (JwtSecurityToken)validatedToken;
         }
 
-        public ActionResult Authenticate(string publicKey, string role, string phoneNumber, IEnumerable<string> permissions, string securityStamp ,bool HasProfile = false)
-              => new JsonResult(Generate(GetClaimsAsync(publicKey, role, phoneNumber, permissions, securityStamp), HasProfile));
+        public ActionResult Authenticate(string publicKey, string role, string phoneNumber,string fullName, IEnumerable<string> permissions, string securityStamp ,bool HasProfile = false)
+              => new JsonResult(Generate(GetClaimsAsync(publicKey, role, phoneNumber, fullName, permissions, securityStamp), HasProfile));
 
         #region Private Methods
 
-        private static List<Claim> GetClaimsAsync(string publicKey, string role, string phoneNumber, IEnumerable<string> permissions, string securityStamp)
+        private static List<Claim> GetClaimsAsync(string publicKey, string role, string phoneNumber,string fullName , IEnumerable<string> permissions, string securityStamp)
         {
             try
             {
@@ -89,7 +89,9 @@ namespace XFit.Utilities.Services
                     new(Claims.SecurityStamp.ToDisplay(), securityStamp),
                     new(Claims.Role.ToDisplay(), role),
                     new(Claims.UserType.ToDisplay(), role),
-                    new(Claims.PhoneNumber.ToDisplay(), phoneNumber)
+                    new(Claims.PhoneNumber.ToDisplay(), phoneNumber),
+                    new(Claims.FullName.ToDisplay(), fullName),
+                    
                 };
 
                 claims.AddRange(permissions.Select(permission =>

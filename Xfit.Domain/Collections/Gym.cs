@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using MongoDB.Bson.Serialization.Attributes;
+using System.ComponentModel.DataAnnotations;
 using Xfit.Domain.Common;
 using XFit.Utilities.Attributes;
 using XFit.Utilities.MongoDatabase.Documents;
@@ -97,7 +98,8 @@ namespace Xfit.Domain.Collections
         public GymTimeType TimeType { get; set; }
         public long From { get; set; }
         public long To { get; set; }
-        public int? Capacity { get; set; }
+        public int? Capacity { get; set; } = null;
+        [BsonDefaultValue(null)]public int? AvailableCapacity { get; set; } = null;
     }
 
 

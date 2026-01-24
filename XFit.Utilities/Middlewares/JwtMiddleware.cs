@@ -34,6 +34,7 @@ namespace XFit.Utilities.Middlewares
                 context.Items["Token"] = jwtToken;
 
                 var publicKey = jwtToken?.Claims.FirstOrDefault(c => c.Type == Claims.PublicKey.ToDisplay())?.Value ?? "system";
+                var fullName = jwtToken?.Claims.FirstOrDefault(c => c.Type == Claims.FullName.ToDisplay())?.Value ?? "system";
                 var role = jwtToken?.Claims.FirstOrDefault(c => c.Type == Claims.Role.ToDisplay())?.Value ?? "system";
                 var type = jwtToken?.Claims.FirstOrDefault(c => c.Type == Claims.UserType.ToDisplay())?.Value ?? "system";
                 var phone = jwtToken?.Claims.FirstOrDefault(c => c.Type == Claims.PhoneNumber.ToDisplay())?.Value ?? "system";
@@ -45,7 +46,8 @@ namespace XFit.Utilities.Middlewares
                     Role = role,
                     Type = type,
                     Permissions = permissions,
-                    PhoneNumber = phone
+                    PhoneNumber = phone,
+                    FullName = fullName
                 };
             }
 

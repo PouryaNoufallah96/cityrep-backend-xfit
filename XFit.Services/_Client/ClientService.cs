@@ -136,7 +136,7 @@ namespace XFit.Services._Client
                 client = AddLoginDateToUser(client);
                 await _clientRepository.ReplaceOneAsync(client);
                 await _walletService.InitWalletAsync(client.PublicKey, UserRole.Client);
-                return _jwtService.Authenticate(client.PublicKey, "Client", client.PhoneNumber, client.Permissions, client.SecurityStamp,client.FullName.HasValue());
+                return _jwtService.Authenticate(client.PublicKey, "Client", client.PhoneNumber, client.FullName, client.Permissions, client.SecurityStamp,client.FullName.HasValue());
             }
             catch (BadRequestException ex)
             {
@@ -170,7 +170,7 @@ namespace XFit.Services._Client
                 if (client.Status == UserStatus.Ban)
                     throw new BadRequestException(ExceptionMessages.UserIsBan);
 
-                return _jwtService.Authenticate(client.PublicKey, role, client.PhoneNumber, client.Permissions, client.SecurityStamp,client.FullName.HasValue());
+                return _jwtService.Authenticate(client.PublicKey, role, client.PhoneNumber, client.FullName, client.Permissions, client.SecurityStamp,client.FullName.HasValue());
             }
             catch (BadRequestException ex)
             {
@@ -284,7 +284,9 @@ namespace XFit.Services._Client
         public async Task<ClientResult> UpsertProfileDataAsync(ClientProfileDataUpdate update, string whois)
         {
             var client = await GetOneClientForInternalUsageAsync(whois);
-            client.FullName = update.FullName?.Trim();
+            client.FirstName = update.FirstName?.Trim();
+            client.LastName = update.LastName?.Trim();
+            client.FullName = client.FirstName + " " + client.LastName;
             client.BirthDay = update.BirthDay.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc); 
             client.Gender = update.Gender;
             client.Address = new ClientAddressInfo
@@ -409,7 +411,8 @@ namespace XFit.Services._Client
                 LoginDates = client.LoginDates,
                 Role = client.Role,
                 PhoneNumber = client.PhoneNumber,
-                FullName = client.FullName,
+                FirstName = client.FirstName,
+                LastName = client.LastName,
                 BirthDay = client.BirthDay == null
                     ? null
                     : DateOnly.FromDateTime(client.BirthDay.Value),

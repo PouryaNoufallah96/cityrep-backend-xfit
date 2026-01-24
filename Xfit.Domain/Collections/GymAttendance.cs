@@ -26,15 +26,15 @@ namespace Xfit.Domain.Collections
 
         public long GymStart { get; set; }
         public long GymEnd { get; set; }
-        public long ClientStartTime { get; set; } 
+        public long? ClientStartTime { get; set; } = null;
+        public string ClinetFullName { get; set; }
 
         public string Notes { get; set; }
         public GymLevel Level { get; set; }
         public DateTime? ExpirePaymentCode { get; set; }
-        public GymAttendanceState PaymentState { get; set; }
-        public DateTime? PaymentMoment { get; set; }
+        public GymAttendanceState GymAttendanceState { get; set; }
 
-        public decimal? GivenRate { get; set; } = null;
+        public decimal? GivenRate { get; set; } = null; 
     }
 
     public enum GymAttendanceState { Reserved, Used, Expired };

@@ -10,7 +10,9 @@ namespace XFit.Services._Client.DTOs.Results
         public List<DateTime> LoginDates { get; set; } = [];
         public UserRole Role { get; set; }
         public string PhoneNumber { get; set; }
-        public string FullName { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+
         public Gender Gender { get; set; }
         public string Email { get; set; } = null;
         public ClientAddressInfo Address { get; set; } = null;

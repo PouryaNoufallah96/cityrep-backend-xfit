@@ -30,7 +30,7 @@ namespace XFit.Services._GymAttendance
 
         #endregion
 
-
+        Task ExpireAttendanceAsync();
 
     }
 }

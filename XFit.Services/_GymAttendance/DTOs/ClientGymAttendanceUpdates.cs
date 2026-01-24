@@ -8,7 +8,7 @@ namespace XFit.Services._GymAttendance.DTOs
     {
         public string GymId { get; set; }
         public string GymTrendId { get; set; }
-
+        public string GymSessionId { get; set; }
     }
 
 

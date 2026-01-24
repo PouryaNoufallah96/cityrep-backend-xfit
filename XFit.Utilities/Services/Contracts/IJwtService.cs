@@ -9,7 +9,7 @@ namespace XFit.Utilities.Services.Contracts
     {
         AccessToken Generate(IEnumerable<Claim> claims, bool hasProfile = false);
         JwtSecurityToken Validate(string token);
-        ActionResult Authenticate(string publicKey, string userRole, string phoneNumber, IEnumerable<string> permissions,
+        ActionResult Authenticate(string publicKey, string userRole, string phoneNumber,string fullName, IEnumerable<string> permissions,
              string securityStamp,bool hasProfile = false);
 
     }
