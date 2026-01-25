@@ -24,7 +24,7 @@ namespace XFit.Controllers.V1
         [CustomRateLimit]
         [Authorize]
         [SwaggerOperation(Summary = "Create gym attendance by client", Tags = ["C-Attendance"])]
-        public async Task<string> CreateByClientAsync(CreateGymAttendanceUpdate update)
+        public async Task<CreateGymAttendanceByClientResult> CreateByClientAsync(CreateGymAttendanceUpdate update)
             => await _gymAttendanceService.CreateGymAttendanceByClientAsync(update, PublicKey);
 
         [HttpPost("[action]")]

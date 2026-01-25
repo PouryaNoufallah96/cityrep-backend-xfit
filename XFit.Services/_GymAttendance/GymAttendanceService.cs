@@ -5,6 +5,8 @@ using MongoDB.Driver.Linq;
 using Xfit.Domain.Collections;
 using Xfit.Domain.Repositories;
 using Xfit.Domain.Repositories.Contracts;
+using XFit.Services._Deposit;
+using XFit.Services._Deposit.DTOs;
 using XFit.Services._Gym;
 using XFit.Services._Gym.DTOs.Updates;
 using XFit.Services._GymAttendance.DTOs;
@@ -18,10 +20,11 @@ using static XFit.Utilities.Constants.RegisterMode;
 
 namespace XFit.Services._GymAttendance
 {
-    public class GymAttendanceService(IGymAttendanceRepository _gymAttendanceRepository,ILogger<GymAttendanceService> _logger,
+    public class GymAttendanceService(IGymAttendanceRepository _gymAttendanceRepository, ILogger<GymAttendanceService> _logger,
         IGymService _gymService,
+        IDepositService _depositService,
         IRandomService _randomService,
-        IWalletService _walletService,  
+        IWalletService _walletService,
         IDepositRepository _depositRepository) : IGymAttendanceService, IScopedDependency
     {
 
@@ -35,7 +38,7 @@ namespace XFit.Services._GymAttendance
         /// <returns></returns>
         /// <exception cref="NotFoundException"></exception>
         /// <exception cref="BadRequestException"></exception>
-        public async Task<string> CreateGymAttendanceByClientAsync(
+        public async Task<CreateGymAttendanceByClientResult> CreateGymAttendanceByClientAsync(
         CreateGymAttendanceUpdate update,
         string whois)
         {
@@ -75,14 +78,14 @@ namespace XFit.Services._GymAttendance
 
             if (session.TimeType == GymTimeType.Session &&
             session.Capacity.HasValue &&
-            session.AvailableCapacity >= session.Capacity.Value)
+            session.UsedCapacity >= session.Capacity.Value)
             {
                 throw new BadRequestException("ظرفیت این جلسه تکمیل شده است");
             }
 
             var iranTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Tehran");
             var iranNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, iranTimeZone);
-            var today = iranNow.Date; 
+            var today = iranNow.Date;
             var validDays = new[]
             {
                 today.DayOfWeek,
@@ -109,13 +112,6 @@ namespace XFit.Services._GymAttendance
             var attendancePrice = session.Price;
             var clientBalance = await GetClientBalanceAsync(whois);
 
-            if (attendancePrice > clientBalance)
-                throw new BadRequestException(
-                "اعتبار کیف پول شما کافی نمی باشد",
-                additionalData: new
-                {
-                    remain = attendancePrice - clientBalance
-                });
 
             DateTime GetSessionExpireTime(DayOfWeek day, long toMinutes)
             {
@@ -134,6 +130,8 @@ namespace XFit.Services._GymAttendance
             }
 
             var expireAt = GetSessionExpireTime(sessionDay.Value, session.To);
+
+
 
             var newAttendance = new GymAttendance
             {
@@ -169,17 +167,31 @@ namespace XFit.Services._GymAttendance
                 GymAttendanceState = GymAttendanceState.Reserved,
             };
 
-            await _gymAttendanceRepository.InsertOneAsync(newAttendance);
 
+            var remain = attendancePrice - clientBalance;
+
+            if (attendancePrice > clientBalance)
+            {
+                newAttendance.GymAttendanceState = GymAttendanceState.Pending;
+                var depositRef = await _depositService.CreateDepositAsync(new CreateDepositUpdate { Amount = remain},newAttendance.ClientPublicKey);
+                newAttendance.DepositReference = depositRef;
+            }
+
+            await _gymAttendanceRepository.InsertOneAsync(newAttendance);
 
             bool isMenSession = trend.Men != null && trend.Men.Any(d => d.Sessions?.Any(s => s.GymSessionId == session.GymSessionId) == true);
             await _gymService.IncreaseSessionAvailableCapacityAsync(gym.GymId, session.GymSessionId, isMenSession);
             await _walletService.MakeWalletShouldUpdateAsync(whois);
 
-            return newAttendance.GymAttendanceReference;
+            return new CreateGymAttendanceByClientResult
+            {
+                GatewayUrl = newAttendance.GymAttendanceState == GymAttendanceState.Pending ? "gatewayurl" : null,
+                Remain = remain,
+                State = newAttendance.GymAttendanceState
+            };
         }
 
-        
+
 
         /// <summary>
         /// this method use for get attendance list for client
@@ -264,7 +276,7 @@ namespace XFit.Services._GymAttendance
                 GymOwnerPublicKey = x.GymOwnerPublicKey,
                 GymTimeType = x.GymTimeType,
                 SessionDate = x.SessionDate,
-                
+
             }).ToList();
 
             return result;
@@ -376,7 +388,7 @@ namespace XFit.Services._GymAttendance
             var result = new GetGymOwnerGymAttendanceListResult();
 
             var query = _gymAttendanceRepository.AsQueryable()
-                .Where(x => x.GymOwnerPublicKey == whois).Where( q => q.GymAttendanceState == GymAttendanceState.Used);
+                .Where(x => x.GymOwnerPublicKey == whois).Where(q => q.GymAttendanceState == GymAttendanceState.Used);
 
             //if (update.States != null && update.States.Any())
             //    query = query.Where(x => update.States.Contains(x.GymAttendanceState));
@@ -471,7 +483,7 @@ namespace XFit.Services._GymAttendance
             var balance = clientDeposits - clientAttendance;
             return balance;
         }
-       
+
         #endregion
 
 
@@ -507,9 +519,9 @@ namespace XFit.Services._GymAttendance
                        GymStart = x.GymStart,
                        GymEnd = x.GymEnd,
                        ClinetFullName = x.ClinetFullName,
-                       GymSessionId = x.GymSessionId,   
+                       GymSessionId = x.GymSessionId,
                        GivenRate = x.GivenRate,
-                       
+
                        CreatedMoment = x.CreatedMoment,
                        ModifiedMoment = x.ModifiedMoment,
                        GymAddress = x.GymAddress,

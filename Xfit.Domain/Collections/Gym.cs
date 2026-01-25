@@ -99,7 +99,7 @@ namespace Xfit.Domain.Collections
         public long From { get; set; }
         public long To { get; set; }
         public int? Capacity { get; set; } = null;
-        [BsonDefaultValue(null)]public int? AvailableCapacity { get; set; } = null;
+        [BsonDefaultValue(null)]public int? UsedCapacity { get; set; } = null; 
     }
 
 

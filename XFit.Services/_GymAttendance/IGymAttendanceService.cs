@@ -7,7 +7,7 @@ namespace XFit.Services._GymAttendance
     public interface IGymAttendanceService
     {
         #region  Client
-        Task<string> CreateGymAttendanceByClientAsync(CreateGymAttendanceUpdate update, string whois);
+        Task<CreateGymAttendanceByClientResult> CreateGymAttendanceByClientAsync(CreateGymAttendanceUpdate update, string whois);
         Task<GetClientGymAttendanceListResult> GetClientGymAttendanceListAsync(GetClientGymAttendanceListUpdate update,string whois);
 
         Task<bool> UpsertRateToAttendanceAsync(AddRateUpdate update,string whois);

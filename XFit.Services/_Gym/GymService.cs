@@ -1,4 +1,6 @@
-﻿using MongoDB.Bson;
+﻿using DnsClient.Internal;
+using Microsoft.Extensions.Logging;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.GeoJsonObjectModel;
 using MongoDB.Driver.Linq;
@@ -23,6 +25,7 @@ namespace XFit.Services._Gym
         IGymTrendRepository _gymTrendRepository,
         IRandomService randomService,
         GymLevelSettings _gymLevelSettings,
+        ILogger<GymService> _logger,
         IGymAttendanceRepository _gymAttendanceRepository,
         IGymClosureRepository _gymClosureRepository,
         IGymFacilityRepository _gymFacilityRepository) : IGymService, IScopedDependency
@@ -190,7 +193,7 @@ namespace XFit.Services._Gym
                     From = s.From,
                     To = s.To,
                     Capacity = s.Capacity,
-                    AvailableCapacity = s.TimeType == GymTimeType.FreeTime ? null : 0
+                    UsedCapacity = s.TimeType == GymTimeType.FreeTime ? null : 0
                 };
 
                 ValidateSessionPrice(session.Price, gymLevel);
@@ -1496,7 +1499,7 @@ namespace XFit.Services._Gym
 
             var filter = Builders<Gym>.Filter.Eq(g => g.GymId, gymId);
 
-            var update = Builders<Gym>.Update.Inc($"{sessionPath}.AvailableCapacity", 1);
+            var update = Builders<Gym>.Update.Inc($"{sessionPath}.UsedCapacity", 1); 
 
             var arrayFilters = new List<ArrayFilterDefinition>
             {
@@ -1508,7 +1511,7 @@ namespace XFit.Services._Gym
                             "$expr",
                             new BsonDocument("$lt", new BsonArray
                             {
-                                "$s.AvailableCapacity",
+                                "$s.UsedCapacity",
                                 "$s.Capacity"
                             })
                         }
@@ -1644,6 +1647,107 @@ namespace XFit.Services._Gym
 
             return slug;
         }
+
+        public async Task UndoGymCapacityByAttendanceAsync(string depositReference)
+        {
+            var attendance = await _gymAttendanceRepository.AsQueryable()
+                .FirstOrDefaultAsync(q =>
+                    q.DepositReference.ToLower() == depositReference.ToLower());
+
+            if (attendance == null)
+                return;
+
+            if (attendance.GymTimeType == GymTimeType.FreeTime)
+                return;
+
+            var gym = await _gymRepository.AsQueryable()
+                .FirstOrDefaultAsync(q => q.GymId == attendance.GymId);
+
+            if (gym == null || gym.Trends == null)
+                return;
+
+            bool? isMenSession = null;
+
+            foreach (var trend in gym.Trends)
+            {
+                if (trend.Men != null)
+                {
+                    var foundInMen = trend.Men
+                        .SelectMany(d => d.Sessions ?? Enumerable.Empty<GymSession>())
+                        .Any(s => s.GymSessionId == attendance.GymSessionId);
+
+                    if (foundInMen)
+                    {
+                        isMenSession = true;
+                        break;
+                    }
+                }
+
+                if (trend.Women != null)
+                {
+                    var foundInWomen = trend.Women
+                        .SelectMany(d => d.Sessions ?? Enumerable.Empty<GymSession>())
+                        .Any(s => s.GymSessionId == attendance.GymSessionId);
+
+                    if (foundInWomen)
+                    {
+                        isMenSession = false;
+                        break;
+                    }
+                }
+            }
+
+            if (isMenSession == null)
+                return; 
+
+            await DecreaseSessionUsedCapacityAsync(
+                attendance.GymId,
+                attendance.GymSessionId,
+                isMenSession.Value
+            );
+        }
+
+        public async Task DecreaseSessionUsedCapacityAsync(
+        string gymId,
+        string gymSessionId,
+        bool isMenSession)
+            {
+                var sessionPath = isMenSession
+                    ? "Trends.$[].Men.$[].Sessions.$[s]"
+                    : "Trends.$[].Women.$[].Sessions.$[s]";
+
+                var filter = Builders<Gym>.Filter.Eq(g => g.GymId, gymId);
+
+                var update = Builders<Gym>.Update.Inc($"{sessionPath}.UsedCapacity", -1);
+
+                var arrayFilters = new List<ArrayFilterDefinition>
+                {
+                    new BsonDocumentArrayFilterDefinition<BsonDocument>(
+                        new BsonDocument
+                        {
+                            { "s.GymSessionId", gymSessionId },
+                            {
+                                "$expr",
+                                new BsonDocument("$gt", new BsonArray
+                                {
+                                    "$s.UsedCapacity",
+                                    0
+                                })
+                            }
+                        })
+                };
+
+                var result = await _gymRepository.UpdateManyAsync(
+                    filter,
+                    update,
+                    new UpdateOptions { ArrayFilters = arrayFilters }
+                );
+
+                if (result.ModifiedCount == 0)
+                    _logger.LogInformation("ظرفیت استفاده‌شده‌ای برای کاهش وجود ندارد");
+            }
+
+
     }
 }
 

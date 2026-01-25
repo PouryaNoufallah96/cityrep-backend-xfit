@@ -26,8 +26,8 @@ namespace Xfit.Domain.Collections
         public decimal SessionPrice { get; set; }
         public long GymStart { get; set; }
         public long GymEnd { get; set; }
-        public DateTime SessionDate { get; set; } 
-
+        public DateTime SessionDate { get; set; }
+        public string DepositReference { get; set; } 
 
         public long? ClientStartTime { get; set; } = null;
         public string Notes { get; set; }
@@ -38,5 +38,5 @@ namespace Xfit.Domain.Collections
         public decimal? GivenRate { get; set; } = null; 
     }
 
-    public enum GymAttendanceState { Reserved, Used, Expired };
+    public enum GymAttendanceState {Pending, Reserved, Used, Expired };
 }

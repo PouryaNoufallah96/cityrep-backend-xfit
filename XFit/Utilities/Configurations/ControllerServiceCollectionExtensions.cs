@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 using XFit.Services._File.DTOs.Settings;
+using XFit.Services._Gateway;
 using XFit.Services._Gym.DTOs.Settings;
 
 namespace XFit.Utilities.Configurations
@@ -9,6 +10,7 @@ namespace XFit.Utilities.Configurations
         public static void AddSettings(this IServiceCollection services, IConfiguration configuration)
         {
             services.RegisterSetting<GymLevelSettings>(configuration.GetSection(nameof(GymLevelSettings)));
+            services.RegisterSetting<IRTHandlerSettings>(configuration.GetSection(nameof(IRTHandlerSettings)));
             services.RegisterSetting<FileSettings>(configuration.GetSection(nameof(FileSettings)));
         }
 
