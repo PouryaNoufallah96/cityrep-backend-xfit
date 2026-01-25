@@ -23,7 +23,8 @@ namespace XFit.Services._Deposit
             {
                 Amount = update.Amount,
                 Role = Xfit.Domain.Common.UserRole.Client,
-                State = DepositState.Pending,
+                //State = DepositState.Pending,
+                State = DepositState.Done ,
                 SourceFullName = CurrentRequestContext.FullName,
                 SourcePublicKey = whois,
                 DepositReference = depositReference,
