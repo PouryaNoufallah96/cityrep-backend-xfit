@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using MongoDB.Driver;
 using System.Data;
 using Xfit.Domain.Collections;
 using Xfit.Domain.Common;
+using Xfit.Domain.Repositories;
 using Xfit.Domain.Repositories.Contracts;
 using XFit.Services._Client.DTOs.Results;
 using XFit.Services._Client.DTOs.Updates;
@@ -23,8 +25,9 @@ namespace XFit.Services._Client
         ISmsService _smsService,
         IRandomService _randomService,
         IJwtService _jwtService,
+        IGymAttendanceRepository _gymAttendanceRepository,
         IWalletService _walletService,
-        JwtServiceSettings _jwtSettings) : IClientService , IScopedDependency
+        JwtServiceSettings _jwtSettings) : IClientService, IScopedDependency
     {
         /// <summary>
         /// use for get verification code for user login or register
@@ -68,7 +71,7 @@ namespace XFit.Services._Client
 
                     await _clientRepository.ReplaceOneAsync(client);
 
-               
+
                 }
 
                 // TODO:UnComment
@@ -136,7 +139,7 @@ namespace XFit.Services._Client
                 client = AddLoginDateToUser(client);
                 await _clientRepository.ReplaceOneAsync(client);
                 await _walletService.InitWalletAsync(client.PublicKey, UserRole.Client);
-                return _jwtService.Authenticate(client.PublicKey, "Client", client.PhoneNumber, client.FullName, client.Permissions, client.SecurityStamp,client.FullName.HasValue());
+                return _jwtService.Authenticate(client.PublicKey, "Client", client.PhoneNumber, client.FullName, client.Permissions, client.SecurityStamp, client.FullName.HasValue());
             }
             catch (BadRequestException ex)
             {
@@ -170,7 +173,7 @@ namespace XFit.Services._Client
                 if (client.Status == UserStatus.Ban)
                     throw new BadRequestException(ExceptionMessages.UserIsBan);
 
-                return _jwtService.Authenticate(client.PublicKey, role, client.PhoneNumber, client.FullName, client.Permissions, client.SecurityStamp,client.FullName.HasValue());
+                return _jwtService.Authenticate(client.PublicKey, role, client.PhoneNumber, client.FullName, client.Permissions, client.SecurityStamp, client.FullName.HasValue());
             }
             catch (BadRequestException ex)
             {
@@ -284,11 +287,16 @@ namespace XFit.Services._Client
         public async Task<ClientResult> UpsertProfileDataAsync(ClientProfileDataUpdate update, string whois)
         {
             var client = await GetOneClientForInternalUsageAsync(whois);
+
+            var oldFirstName = client.FirstName;
+            var oldLastName = client.LastName;
+
             client.FirstName = update.FirstName?.Trim();
             client.LastName = update.LastName?.Trim();
             client.FullName = client.FirstName + " " + client.LastName;
-            client.BirthDay = update.BirthDay.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc); 
+            client.BirthDay = update.BirthDay.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
             client.Gender = update.Gender;
+
             client.Address = new ClientAddressInfo
             {
                 Province = update.Provice,
@@ -296,7 +304,19 @@ namespace XFit.Services._Client
                 Address = update.Address
             };
 
+            bool nameChanged = oldFirstName != client.FirstName || oldLastName != client.LastName;
+
             await _clientRepository.ReplaceOneAsync(client);
+
+            if (nameChanged)
+            {
+                var filter = Builders<GymAttendance>.Filter.Eq(x => x.ClientPublicKey, whois);
+                var updateDefinition = Builders<GymAttendance>.Update
+                    .Set(x => x.ClinetFullName, client.FullName);
+
+                await _gymAttendanceRepository.UpdateManyAsync(filter, updateDefinition);
+            }
+
             return ConvertToResult(client);
         }
 

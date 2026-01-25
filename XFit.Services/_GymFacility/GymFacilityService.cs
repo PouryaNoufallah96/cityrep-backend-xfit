@@ -1,4 +1,7 @@
-﻿using Xfit.Domain.Collections;
+﻿using MongoDB.Bson;
+using MongoDB.Driver;
+using Xfit.Domain.Collections;
+using Xfit.Domain.Repositories;
 using Xfit.Domain.Repositories.Contracts;
 using XFit.Services._Gym;
 using XFit.Services._GymFacility.DTOs;
@@ -42,10 +45,8 @@ namespace XFit.Services._GymFacility
         {
             var title = update.Title.Trim();
 
-
-            var gymFactility = await _gymFacilityRepository.FindOneAsync(q => q.FacilityId == update.GymFacilityId)
+            var gymFacility = await _gymFacilityRepository.FindOneAsync(q => q.FacilityId == update.GymFacilityId)
                 ?? throw new NotFoundException("Gym facility not found.");
-
 
             var titleExists = await _gymFacilityRepository.ExistsAsync(x =>
                 x.Title == title && x.FacilityId != update.GymFacilityId
@@ -54,14 +55,25 @@ namespace XFit.Services._GymFacility
             if (titleExists)
                 throw new Exception("Gym facility with this title already exists.");
 
-            gymFactility.Title = title;
+            bool isChanged = false;
 
-            await _gymFacilityRepository.ReplaceOneAsync(gymFactility);
+            if (gymFacility.Title != title)
+            {
+                gymFacility.Title = title;
+                isChanged = true;
+            }
 
-            // TODO Sync Gym
+            if (isChanged)
+            {
+                await _gymFacilityRepository.ReplaceOneAsync(gymFacility);
+                await _gymService.UpdateGymsWithFacilityAsync(gymFacility);
+            }
 
-            return gymFactility;
+            return gymFacility;
         }
+
+        
+
 
         public async Task RemoveAsync(RemoveGymFacilityUpdate update)
         {

@@ -1,4 +1,7 @@
-﻿using Xfit.Domain.Collections;
+﻿using MongoDB.Bson;
+using MongoDB.Driver;
+using Xfit.Domain.Collections;
+using Xfit.Domain.Repositories;
 using Xfit.Domain.Repositories.Contracts;
 using XFit.Services._Gym;
 using XFit.Services._GymTrend.DTOs;
@@ -51,14 +54,34 @@ namespace XFit.Services._GymTrend
             );
 
             if (titleExists)
-                throw new Exception("Gym trend with this title already exists.");
+                throw new BadRequestException("عنوان تکراری می‌باشد");
 
-            gymTrend.Title = title;
-            gymTrend.IconUrl = update.IconUrl;
+            bool isChanged = false;
 
-            await _gymTrendRepository.ReplaceOneAsync(gymTrend);
+            if (gymTrend.Title != title)
+            {
+                gymTrend.Title = title;
+                isChanged = true;
+            }
+
+            if (gymTrend.IconUrl != update.IconUrl)
+            {
+                gymTrend.IconUrl = update.IconUrl;
+                isChanged = true;
+            }
+
+            if (isChanged)
+            {
+                await _gymTrendRepository.ReplaceOneAsync(gymTrend);
+
+                await _gymService.UpdateGymsWithTrendAsync(gymTrend);
+            }
+
             return gymTrend;
         }
+
+
+        
 
         /// <summary>
         /// Remove gym trend

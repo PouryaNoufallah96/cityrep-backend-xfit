@@ -1,11 +1,14 @@
 ﻿using Microsoft.Extensions.Logging;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using Xfit.Domain.Collections;
+using Xfit.Domain.Repositories;
 using Xfit.Domain.Repositories.Contracts;
 using XFit.Services._Gym;
 using XFit.Services._Gym.DTOs.Updates;
 using XFit.Services._GymAttendance.DTOs;
+using XFit.Services._Wallet;
 using XFit.Utilities.Constants;
 using XFit.Utilities.Exceptions.Common;
 using XFit.Utilities.MongoDatabase.Extensions;
@@ -18,6 +21,7 @@ namespace XFit.Services._GymAttendance
     public class GymAttendanceService(IGymAttendanceRepository _gymAttendanceRepository,ILogger<GymAttendanceService> _logger,
         IGymService _gymService,
         IRandomService _randomService,
+        IWalletService _walletService,  
         IDepositRepository _depositRepository) : IGymAttendanceService, IScopedDependency
     {
 
@@ -68,6 +72,14 @@ namespace XFit.Services._GymAttendance
             if (session == null || sessionDay == null)
                 throw new NotFoundException("تایم ورزشی در باشگاه یافت نشد");
 
+
+            if (session.TimeType == GymTimeType.Session &&
+            session.Capacity.HasValue &&
+            session.AvailableCapacity >= session.Capacity.Value)
+            {
+                throw new BadRequestException("ظرفیت این جلسه تکمیل شده است");
+            }
+
             var iranTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Tehran");
             var iranNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, iranTimeZone);
             var today = iranNow.Date; 
@@ -99,11 +111,11 @@ namespace XFit.Services._GymAttendance
 
             if (attendancePrice > clientBalance)
                 throw new BadRequestException(
-                    "اعتبار کیف پول شما کافی نمی باشد",
-                    additionalData: new
-                    {
-                        remain = attendancePrice - clientBalance
-                    });
+                "اعتبار کیف پول شما کافی نمی باشد",
+                additionalData: new
+                {
+                    remain = attendancePrice - clientBalance
+                });
 
             DateTime GetSessionExpireTime(DayOfWeek day, long toMinutes)
             {
@@ -159,9 +171,15 @@ namespace XFit.Services._GymAttendance
 
             await _gymAttendanceRepository.InsertOneAsync(newAttendance);
 
+
+            bool isMenSession = trend.Men != null && trend.Men.Any(d => d.Sessions?.Any(s => s.GymSessionId == session.GymSessionId) == true);
+            await _gymService.IncreaseSessionAvailableCapacityAsync(gym.GymId, session.GymSessionId, isMenSession);
+            await _walletService.MakeWalletShouldUpdateAsync(whois);
+
             return newAttendance.GymAttendanceReference;
         }
 
+        
 
         /// <summary>
         /// this method use for get attendance list for client
@@ -340,8 +358,8 @@ namespace XFit.Services._GymAttendance
             attendance.ClientStartTime = nowIran.Hour * 60 + nowIran.Minute;
 
             await _gymAttendanceRepository.ReplaceOneAsync(attendance);
+            await _walletService.MakeWalletShouldUpdateAsync(attendance.GymOwnerPublicKey);
             return true;
-
         }
 
 

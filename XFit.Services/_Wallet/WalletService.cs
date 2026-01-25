@@ -65,7 +65,7 @@ namespace XFit.Services._Wallet
             await _walletRepository.FindOneAndUpdateAsync(filter, update);
         }
 
-
+        
         /// <summary>
         /// use for update should update wallets
         /// </summary>
@@ -313,7 +313,6 @@ namespace XFit.Services._Wallet
 
             var clientAttendance = await _gymAttendanceRepository.AsQueryable()
                 .Where(q => q.ClientPublicKey == whois).SumAsync(q => q.SessionPrice);
-
 
             var balance = clientDeposits - clientAttendance;
 

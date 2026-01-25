@@ -1,5 +1,4 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
-using System.ComponentModel.DataAnnotations;
 using Xfit.Domain.Common;
 using XFit.Utilities.Attributes;
 using XFit.Utilities.MongoDatabase.Documents;

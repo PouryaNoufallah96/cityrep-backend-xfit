@@ -189,7 +189,8 @@ namespace XFit.Services._Gym
                     TimeType = s.TimeType,
                     From = s.From,
                     To = s.To,
-                    Capacity = s.Capacity
+                    Capacity = s.Capacity,
+                    AvailableCapacity = s.TimeType == GymTimeType.FreeTime ? null : 0
                 };
 
                 ValidateSessionPrice(session.Price, gymLevel);
@@ -579,20 +580,56 @@ namespace XFit.Services._Gym
         /// </summary>
         /// <param name="gym"></param>
         /// <param name="update"></param>
-        private void UpdateGymBaseInfo(Gym gym, EditGymUpdate update)
+        private async Task UpdateGymBaseInfoAsync(Gym gym, EditGymUpdate update)
         {
+            bool titleChanged = false;
+            bool imagesChanged = false;
+
             if (!string.IsNullOrWhiteSpace(update.Title) &&
                 gym.Title != update.Title.Trim())
             {
                 gym.Title = update.Title.Trim();
                 gym.Slug = CreateSlug(gym.Title);
+                titleChanged = true;
             }
 
             gym.Description = update.Description?.Trim();
             gym.Address = CreateAddressInfo(update.Address);
-            gym.Contact = update.Contact;
-            gym.Images = update.Images;
+
+            if (update.Contact != null)
+                gym.Contact = update.Contact;
+
+            if (update.Images != null && !update.Images.SequenceEqual(gym.Images))
+            {
+                gym.Images = update.Images;
+                imagesChanged = true;
+            }
+
+            await _gymRepository.ReplaceOneAsync(gym);
+
+            if (titleChanged || imagesChanged)
+            {
+                var filter = Builders<GymAttendance>.Filter.Eq(x => x.GymId, gym.GymId);
+                var updateDef = Builders<GymAttendance>.Update.Combine();
+
+                if (titleChanged)
+                    updateDef = updateDef.Set(x => x.GymTitle, gym.Title);
+
+                if (imagesChanged)
+                {
+                    var mainImage = gym.Images?
+                        .OrderBy(i => i.Order)
+                        .Select(i => i.ImageUrl)
+                        .FirstOrDefault();
+                    updateDef = updateDef.Set(x => x.GymImageUrl, mainImage);
+                }
+
+                if (updateDef != null)
+                    await _gymAttendanceRepository.UpdateManyAsync(filter, updateDef);
+            }
         }
+
+
 
 
         /// <summary>
@@ -924,11 +961,23 @@ namespace XFit.Services._Gym
             var today = DateTime.UtcNow.Date;
             var next7Days = today.AddDays(7);
 
-            var closureFilter = Builders<GymClosure>.Filter.And(
-                Builders<GymClosure>.Filter.Eq(c => c.GymId, gym.GymId),
-                Builders<GymClosure>.Filter.Gte(c => c.ClosureDate, today),
-                Builders<GymClosure>.Filter.Lte(c => c.ClosureDate, next7Days)
-            );
+            //var closureFilter = Builders<GymClosure>.Filter.And(
+            //    Builders<GymClosure>.Filter.Eq(c => c.GymId, gym.GymId),
+            //    Builders<GymClosure>.Filter.Gte(c => c.ClosureDate, today),
+            //    Builders<GymClosure>.Filter.Lte(c => c.ClosureDate, next7Days)
+            //);
+
+            var iranTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Tehran");
+            var iranToday = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, iranTimeZone).Date;
+            var fromUtc = TimeZoneInfo.ConvertTimeToUtc(iranToday, iranTimeZone);
+            var toUtc = TimeZoneInfo.ConvertTimeToUtc(
+                iranToday.AddDays(2).AddDays(1).AddTicks(-1),
+                iranTimeZone);
+
+            var closureFilter =
+                Builders<GymClosure>.Filter.Eq(c => c.GymId, gym.GymId) &
+                Builders<GymClosure>.Filter.Gte(x => x.ClosureDate, fromUtc) &
+                Builders<GymClosure>.Filter.Lte(x => x.ClosureDate, toUtc);
 
             var closures = await _gymClosureRepository.Find(closureFilter).Limit(100).ToListAsync();
 
@@ -1433,6 +1482,103 @@ namespace XFit.Services._Gym
             }
 
 
+        }
+
+
+        public async Task IncreaseSessionAvailableCapacityAsync(
+            string gymId,
+            string gymSessionId,
+            bool isMenSession)
+        {
+            var sessionPath = isMenSession
+                ? "Trends.$[].Men.$[].Sessions.$[s]"
+                : "Trends.$[].Women.$[].Sessions.$[s]";
+
+            var filter = Builders<Gym>.Filter.Eq(g => g.GymId, gymId);
+
+            var update = Builders<Gym>.Update.Inc($"{sessionPath}.AvailableCapacity", 1);
+
+            var arrayFilters = new List<ArrayFilterDefinition>
+            {
+                new BsonDocumentArrayFilterDefinition<BsonDocument>(
+                    new BsonDocument
+                    {
+                        { "s.GymSessionId", gymSessionId },
+                        {
+                            "$expr",
+                            new BsonDocument("$lt", new BsonArray
+                            {
+                                "$s.AvailableCapacity",
+                                "$s.Capacity"
+                            })
+                        }
+                    })
+            };
+
+            var result = await _gymRepository.UpdateManyAsync(
+                filter,
+                update,
+                new UpdateOptions { ArrayFilters = arrayFilters }
+            );
+
+            if (result.ModifiedCount == 0)
+                throw new BadRequestException("ظرفیت این جلسه تکمیل شده است");
+        }
+
+
+        /// <summary>
+        /// Update all gyms that use this facility with new Title
+        /// </summary>
+        public async Task UpdateGymsWithFacilityAsync(GymFacility updatedFacility)
+        {
+            if (updatedFacility == null)
+                throw new ArgumentNullException(nameof(updatedFacility));
+
+            var filter = Builders<Gym>.Filter.ElemMatch(
+                g => g.Facilities,
+                f => f.FacilityId == updatedFacility.FacilityId
+            );
+
+            var update = Builders<Gym>.Update
+                .Set("Facilities.$[f].Title", updatedFacility.Title);
+
+            var arrayFilters = new List<ArrayFilterDefinition>
+            {
+                new BsonDocumentArrayFilterDefinition<BsonDocument>(
+                    new BsonDocument("f.FacilityId", updatedFacility.FacilityId)
+                )
+            };
+
+            var options = new UpdateOptions { ArrayFilters = arrayFilters };
+
+            await _gymRepository.UpdateManyAsync(filter, update, options);
+        }
+
+
+        public async Task UpdateGymsWithTrendAsync(GymTrend updatedTrend)
+        {
+            if (updatedTrend == null)
+                throw new ArgumentNullException(nameof(updatedTrend));
+
+            var filter = Builders<Gym>.Filter.ElemMatch(
+                g => g.Trends,
+                t => t.GymTrendId == updatedTrend.GymTrendId
+            );
+
+            var update = Builders<Gym>.Update
+                .Set("Trends.$[t].Title", updatedTrend.Title)
+                .Set("Trends.$[t].TrendIconUrl", updatedTrend.IconUrl);
+
+            var arrayFilters = new List<ArrayFilterDefinition>
+            {
+                new BsonDocumentArrayFilterDefinition<BsonDocument>(
+                    new BsonDocument("t.GymTrendId", updatedTrend.GymTrendId)
+                )
+            };
+
+            var options = new UpdateOptions { ArrayFilters = arrayFilters };
+
+            await _gymRepository.UpdateManyAsync(filter, update, options);
         }
 
         #endregion
