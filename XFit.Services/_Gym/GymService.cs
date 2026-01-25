@@ -562,7 +562,7 @@ namespace XFit.Services._Gym
             if (gym == null)
                 throw new BadRequestException("Gym not found");
 
-            UpdateGymBaseInfo(gym, update);
+            await UpdateGymBaseInfoAsync(gym, update);
 
             await UpdateGymFacilities(gym, update.FacilityIds);
 
