@@ -2,6 +2,7 @@
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
+using Sentry;
 using Xfit.Domain.Collections;
 using Xfit.Domain.Repositories;
 using Xfit.Domain.Repositories.Contracts;
@@ -25,6 +26,7 @@ namespace XFit.Services._GymAttendance
         IDepositService _depositService,
         IRandomService _randomService,
         IWalletService _walletService,
+        IGymClosureRepository _gymClosureRepository,
         IDepositRepository _depositRepository) : IGymAttendanceService, IScopedDependency
     {
 
@@ -167,13 +169,19 @@ namespace XFit.Services._GymAttendance
                 GymAttendanceState = GymAttendanceState.Reserved,
             };
 
+            await CheckGymIsOpenForSessionAsync(
+            gym.GymId,
+            newAttendance.SessionDate,
+            session.From,
+            session.To
+            );
 
             var remain = attendancePrice - clientBalance;
 
             if (attendancePrice > clientBalance)
             {
                 newAttendance.GymAttendanceState = GymAttendanceState.Pending;
-                var depositRef = await _depositService.CreateDepositAsync(new CreateDepositUpdate { Amount = remain},newAttendance.ClientPublicKey);
+                var depositRef = await _depositService.CreateDepositAsync(new CreateDepositUpdate { Amount = remain }, newAttendance.ClientPublicKey);
                 newAttendance.DepositReference = depositRef;
             }
 
@@ -191,6 +199,37 @@ namespace XFit.Services._GymAttendance
             };
         }
 
+
+
+        private async Task CheckGymIsOpenForSessionAsync(
+        string gymId,
+        DateTime sessionDate,
+        long sessionFrom,
+        long sessionTo)
+        {
+            var closures = await _gymClosureRepository.AsQueryable()
+                .Where(c =>
+                    c.GymId == gymId &&
+                    c.ClosureDate.Date == sessionDate.Date
+                )
+                .ToListAsync();
+
+            foreach (var closure in closures)
+            {
+                if (closure.IsAllDay)
+                    throw new BadRequestException("باشگاه در این تاریخ تعطیل می‌باشد");
+
+                if (closure.From.HasValue && closure.To.HasValue)
+                {
+                    var overlap =
+                        sessionFrom < closure.To.Value &&
+                        sessionTo > closure.From.Value;
+
+                    if (overlap)
+                        throw new BadRequestException("باشگاه در این بازه زمانی تعطیل می‌باشد");
+                }
+            }
+        }
 
 
         /// <summary>
