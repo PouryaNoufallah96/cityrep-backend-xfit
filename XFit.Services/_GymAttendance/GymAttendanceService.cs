@@ -477,7 +477,7 @@ namespace XFit.Services._GymAttendance
                 .SumAsync(q => q.Amount);
 
             var clientAttendance = await _gymAttendanceRepository.AsQueryable()
-                .Where(q => q.ClientPublicKey == whois).SumAsync(q => q.SessionPrice);
+                .Where(q => q.ClientPublicKey == whois && q.GymAttendanceState != GymAttendanceState.Pending).SumAsync(q => q.SessionPrice);
 
 
             var balance = clientDeposits - clientAttendance;
