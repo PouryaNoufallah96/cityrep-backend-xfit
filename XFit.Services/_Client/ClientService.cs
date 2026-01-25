@@ -139,7 +139,7 @@ namespace XFit.Services._Client
                 client = AddLoginDateToUser(client);
                 await _clientRepository.ReplaceOneAsync(client);
                 await _walletService.InitWalletAsync(client.PublicKey, UserRole.Client);
-                return _jwtService.Authenticate(client.PublicKey, "Client", client.PhoneNumber, client.FullName, client.Permissions, client.SecurityStamp, client.FullName.HasValue());
+                return _jwtService.Authenticate(client.PublicKey, "Client", client.PhoneNumber, client.FullName ?? "", client.Permissions, client.SecurityStamp, client.FullName.HasValue());
             }
             catch (BadRequestException ex)
             {
@@ -173,7 +173,7 @@ namespace XFit.Services._Client
                 if (client.Status == UserStatus.Ban)
                     throw new BadRequestException(ExceptionMessages.UserIsBan);
 
-                return _jwtService.Authenticate(client.PublicKey, role, client.PhoneNumber, client.FullName, client.Permissions, client.SecurityStamp, client.FullName.HasValue());
+                return _jwtService.Authenticate(client.PublicKey, role, client.PhoneNumber, client.FullName ?? " ", client.Permissions, client.SecurityStamp, client.FullName.HasValue());
             }
             catch (BadRequestException ex)
             {

@@ -5,6 +5,7 @@ using Xfit.Domain.Repositories.Contracts;
 using XFit.Services._Deposit.DTOs;
 using XFit.Services._Gateway;
 using XFit.Services._Gym;
+using XFit.Services._Wallet;
 using XFit.Utilities.Constants;
 using XFit.Utilities.Exceptions.Common;
 using XFit.Utilities.MongoDatabase.Filter;
@@ -12,7 +13,7 @@ using static XFit.Utilities.Constants.RegisterMode;
 
 namespace XFit.Services._Deposit
 {
-    public class DepositService(IDepositRepository _depositRepository,IGatewayService _gatewayService , IGymService _gymService) : IDepositService, IScopedDependency
+    public class DepositService(IDepositRepository _depositRepository,IGatewayService _gatewayService , IGymService _gymService,IWalletService _walletService) : IDepositService, IScopedDependency
     {
         public async Task<string> CreateDepositAsync(CreateDepositUpdate update,string whois)
         {
@@ -32,6 +33,7 @@ namespace XFit.Services._Deposit
             };
 
             await _depositRepository.InsertOneAsync(newDeposit);
+            await _walletService.MakeWalletShouldUpdateAsync(whois);
             return depositReference;
         }
 

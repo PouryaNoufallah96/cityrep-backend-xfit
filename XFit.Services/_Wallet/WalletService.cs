@@ -120,13 +120,16 @@ namespace XFit.Services._Wallet
         {
             var wallet = await _walletRepository.AsQueryable()
                 .Where(q => q.ShouldUpdate == true)
-                .OrderByDescending(q => q.ModifiedMoment)
+                .OrderByDescending(q => q.ModifiedMoment).ThenBy(q => q.CreatedMoment)
                 .FirstOrDefaultAsync();
 
             if (wallet == null)
                 return;
-            await SyncWalletAsync(wallet);
-
+            var walletresult = await SyncWalletAsync(wallet);
+            wallet.FrozenBalance = walletresult.FrozenBalance;
+            wallet.AvailableBalance = walletresult.AvailableBalance;
+            wallet.TotalBalance = walletresult.TotalBalance;    
+            await _walletRepository.ReplaceOneAsync(wallet);
         }
 
 
@@ -246,12 +249,12 @@ namespace XFit.Services._Wallet
         /// </summary>
         /// <param name="wallet"></param>
         /// <returns></returns>
-        private async Task SyncWalletAsync(Wallet wallet)
+        private async Task<WalletResult> SyncWalletAsync(Wallet wallet)
         {
             if (wallet.Role == UserRole.Client)
-                await SyncClientWalletAsync(wallet.WalletId);
+               return await SyncClientWalletAsync(wallet.WalletId);
             else
-                await SyncGymOwnerWalletAsync(wallet.WalletId);
+               return await SyncGymOwnerWalletAsync(wallet.WalletId);
 
         } 
 
