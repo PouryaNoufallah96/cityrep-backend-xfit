@@ -1747,7 +1747,56 @@ namespace XFit.Services._Gym
                     _logger.LogInformation("ظرفیت استفاده‌شده‌ای برای کاهش وجود ندارد");
             }
 
+        public async Task MakeDoneAttendanceAsync(string depositReference)
+        {
+            var attendance = await _gymAttendanceRepository.AsQueryable()
+                .FirstOrDefaultAsync(q =>
+                    q.DepositReference.ToLower() == depositReference.ToLower());
 
+            if (attendance == null)
+                return;
+
+            if (attendance.GymTimeType == GymTimeType.FreeTime)
+            {
+                attendance.GymAttendanceState = GymAttendanceState.Reserved;
+                await _gymAttendanceRepository.ReplaceOneAsync(attendance);
+                return;
+            }
+
+            var gym = await _gymRepository.AsQueryable()
+                .FirstOrDefaultAsync(g => g.GymId == attendance.GymId);
+
+            if (gym == null || gym.Trends == null)
+                throw new BadRequestException("باشگاه یا سشن یافت نشد");
+
+            GymSession session = null;
+
+            foreach (var trend in gym.Trends)
+            {
+                session = trend.Men?
+                    .SelectMany(d => d.Sessions ?? Enumerable.Empty<GymSession>())
+                    .FirstOrDefault(s => s.GymSessionId == attendance.GymSessionId)
+                    ?? trend.Women?
+                    .SelectMany(d => d.Sessions ?? Enumerable.Empty<GymSession>())
+                    .FirstOrDefault(s => s.GymSessionId == attendance.GymSessionId);
+
+                if (session != null)
+                    break;
+            }
+
+            if (session == null) return;
+                //throw new BadRequestException("سشن ورزشی یافت نشد");
+
+            attendance.GymAttendanceState = GymAttendanceState.Reserved;
+            if (session.Capacity.HasValue &&
+                session.UsedCapacity >= session.Capacity.Value)
+            {
+                attendance.GymAttendanceState = GymAttendanceState.Failed;
+                //throw new BadRequestException("ظرفیت این جلسه تکمیل شده است");
+            }
+
+            await _gymAttendanceRepository.ReplaceOneAsync(attendance);
+        }
     }
 }
 

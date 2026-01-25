@@ -45,5 +45,6 @@ namespace XFit.Services._Gym
         Task UpdateGymsWithTrendAsync(GymTrend updatedTrend);
 
         Task UndoGymCapacityByAttendanceAsync(string depositReference);
+        Task MakeDoneAttendanceAsync(string depositReference);
     }
 }

@@ -52,8 +52,9 @@ namespace XFit.Services._Deposit
                 var depositFilter = Builders<Deposit>.Filter.Eq(d => d.Id, deposit.Id);
                 var depositUpdate = Builders<Deposit>.Update.Set(d => d.State, DepositState.Done);
                 await _depositRepository.FindOneAndUpdateAsync(depositFilter, depositUpdate);
+                await _gymService.MakeDoneAttendanceAsync(update.DepositReference);
 
-               
+
                 return new DepositResult
                 {
                     State = DepositState.Done,
@@ -66,7 +67,7 @@ namespace XFit.Services._Deposit
                 var depositFilter = Builders<Deposit>.Filter.Eq(d => d.Id, deposit.Id);
                 var depositUpdate = Builders<Deposit>.Update.Set(d => d.State, DepositState.Failed);
                 await _depositRepository.FindOneAndUpdateAsync(depositFilter, depositUpdate);
-
+                await _gymService.UndoGymCapacityByAttendanceAsync(update.DepositReference);
                 return new DepositResult
                 {
                     State = DepositState.Failed,

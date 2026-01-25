@@ -38,5 +38,5 @@ namespace Xfit.Domain.Collections
         public decimal? GivenRate { get; set; } = null; 
     }
 
-    public enum GymAttendanceState {Pending, Reserved, Used, Expired };
+    public enum GymAttendanceState {Pending, Reserved, Used, Expired , Failed };
 }
