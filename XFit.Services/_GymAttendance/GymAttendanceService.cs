@@ -193,6 +193,7 @@ namespace XFit.Services._GymAttendance
 
             return new CreateGymAttendanceByClientResult
             {
+                AttendanceReference = newAttendance.GymAttendanceReference,
                 GatewayUrl = newAttendance.GymAttendanceState == GymAttendanceState.Pending ? "gatewayurl" : null,
                 Remain = remain,
                 State = newAttendance.GymAttendanceState
