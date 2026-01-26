@@ -8,6 +8,7 @@ using XFit.Utilities.Api;
 using XFit.Utilities.Attributes;
 using XFit.Utilities.Filters;
 using XFit.Utilities.MongoDatabase.Filter;
+using XFit.Utilities.Permissions;
 
 namespace XFit.Controllers.V1
 {
@@ -20,7 +21,7 @@ namespace XFit.Controllers.V1
     {
         [HttpPost("[action]")]
         [CustomRateLimit]
-        [Authorize]
+        [Authorize(Permissions.CreateUser)]
         [SwaggerOperation(Summary = "Create a gym trend", Tags = ["A-Trend"])]
         public async Task<GymTrend> CreateAsync(CreateGymTrendUpdate update)
         => await _gymTrendService.CreateAsync(update);
@@ -28,7 +29,7 @@ namespace XFit.Controllers.V1
 
         [HttpPost("[action]")]
         [CustomRateLimit]
-        [Authorize]
+        [Authorize(Permissions.CreateUser)]
         [SwaggerOperation(Summary = "Edit a gym trend", Tags = ["A-Trend"])]
         public async Task<GymTrend> EditAsync(EditGymTrendUpdate update)
             => await _gymTrendService.EditAsync(update);
@@ -36,7 +37,7 @@ namespace XFit.Controllers.V1
 
         [HttpPost("[action]")]
         [CustomRateLimit]
-        [Authorize]
+        [Authorize(Permissions.CreateUser)]
         [SwaggerOperation(Summary = "Remove a gym trend", Tags = ["A-Trend"])]
         public async Task<bool> RemoveAsync(RemoveGymTrendUpdate update)
         {
@@ -47,7 +48,7 @@ namespace XFit.Controllers.V1
 
         [HttpPost("[action]")]
         [CustomRateLimit]
-        [Authorize]
+        [Authorize(Permissions.CreateUser)]
         [SwaggerOperation(Summary = "Get a gym trend by id", Tags = ["A-Trend"])]
         public async Task<GymTrend> GetByIdAsync(GymTrendIdUpdate update)
             => await _gymTrendService.GetByIdAsync(update);
@@ -55,6 +56,7 @@ namespace XFit.Controllers.V1
 
         [CustomRateLimit]
         [HttpPost("[action]")]
+        [Authorize(Permissions.CreateUser)]
         [SwaggerOperation(Summary = "Get gym trends list", Tags = ["A-Trend"])]
         public async Task<MonjoFilteredResult<GymTrend>> GetAllAsync(MonjoQuery query)
             => await _gymTrendService.GetAllAsync(query);

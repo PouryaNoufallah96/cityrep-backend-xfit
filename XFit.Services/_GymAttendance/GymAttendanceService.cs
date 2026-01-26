@@ -176,7 +176,7 @@ namespace XFit.Services._GymAttendance
             session.To
             );
 
-            var remain = attendancePrice - clientBalance;
+            var remain = clientBalance - attendancePrice;
 
             if (attendancePrice > clientBalance)
             {
@@ -188,7 +188,7 @@ namespace XFit.Services._GymAttendance
             await _gymAttendanceRepository.InsertOneAsync(newAttendance);
 
             bool isMenSession = trend.Men != null && trend.Men.Any(d => d.Sessions?.Any(s => s.GymSessionId == session.GymSessionId) == true);
-            await _gymService.IncreaseSessionAvailableCapacityAsync(gym.GymId, session.GymSessionId, isMenSession);
+            await _gymService.IncreaseSessionAvailableCapacityAsync(gym, session, isMenSession);
             await _walletService.MakeWalletShouldUpdateAsync(whois);
 
             return new CreateGymAttendanceByClientResult

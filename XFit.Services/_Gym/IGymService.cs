@@ -36,10 +36,16 @@ namespace XFit.Services._Gym
         Task UpdateGymTrendTitleAsync(string trendId, string newTitle);
 
         Task SyncRateOfGymAsync(string gymId);
+
         Task IncreaseSessionAvailableCapacityAsync(
             string gymId,
             string gymSessionId,
             bool isMenSession);
+
+        Task IncreaseSessionAvailableCapacityAsync(
+         Gym gym,
+         GymSession gymSession,
+         bool isMenSession);
 
         Task UpdateGymsWithFacilityAsync(GymFacility updatedFacility);
         Task UpdateGymsWithTrendAsync(GymTrend updatedTrend);

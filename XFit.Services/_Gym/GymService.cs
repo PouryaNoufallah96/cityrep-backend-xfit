@@ -5,6 +5,7 @@ using MongoDB.Driver;
 using MongoDB.Driver.GeoJsonObjectModel;
 using MongoDB.Driver.Linq;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using Xfit.Domain.Collections;
 using Xfit.Domain.Common;
 using Xfit.Domain.Repositories;
@@ -465,7 +466,7 @@ namespace XFit.Services._Gym
                 result.Add(new GymTrendWorkingHour
                 {
                     DayOfWeek = day,
-                    Sessions = null
+                    Sessions = []
                 });
             }
 
@@ -901,7 +902,7 @@ namespace XFit.Services._Gym
                 Images = g.Images,
                 Facilities = g.Facilities,
                 WeekPrices = g.WeekPrices,
-                Slug = g.Slug,  
+                Slug = g.Slug,
                 Rate = g.Rate,
 
                 CreatedMoment = g.CreatedMoment,
@@ -1488,45 +1489,139 @@ namespace XFit.Services._Gym
         }
 
 
+
+
         public async Task IncreaseSessionAvailableCapacityAsync(
-            string gymId,
-            string gymSessionId,
-            bool isMenSession)
+         Gym gym,
+         GymSession gymSession,
+         bool isMenSession)
         {
-            var sessionPath = isMenSession
-                ? "Trends.$[].Men.$[].Sessions.$[s]"
-                : "Trends.$[].Women.$[].Sessions.$[s]";
+            if (gym == null)
+                throw new ArgumentNullException(nameof(gym));
 
-            var filter = Builders<Gym>.Filter.Eq(g => g.GymId, gymId);
+            if (gymSession == null)
+                throw new ArgumentNullException(nameof(gymSession));
 
-            var update = Builders<Gym>.Update.Inc($"{sessionPath}.UsedCapacity", 1); 
+            if(gymSession.UsedCapacity == null) gymSession.UsedCapacity = 0;
 
-            var arrayFilters = new List<ArrayFilterDefinition>
+            gymSession.UsedCapacity += 1;
+
+            bool sessionUpdated = false;
+
+            foreach (var trend in gym.Trends)
             {
-                new BsonDocumentArrayFilterDefinition<BsonDocument>(
-                    new BsonDocument
+                var genderSessions = isMenSession ? trend.Men : trend.Women;
+                if (genderSessions == null) continue;
+
+                foreach (var category in genderSessions)
+                {
+                    var sessions = category.Sessions ?? new List<GymSession>();
+                    for (int i = 0; i < sessions.Count; i++)
                     {
-                        { "s.GymSessionId", gymSessionId },
+                        if (sessions[i].GymSessionId == gymSession.GymSessionId)
                         {
-                            "$expr",
-                            new BsonDocument("$lt", new BsonArray
-                            {
-                                "$s.UsedCapacity",
-                                "$s.Capacity"
-                            })
+                            sessions[i] = gymSession;
+                            sessionUpdated = true;
+                            break;
                         }
-                    })
-            };
+                    }
 
-            var result = await _gymRepository.UpdateManyAsync(
-                filter,
-                update,
-                new UpdateOptions { ArrayFilters = arrayFilters }
-            );
+                    if (sessionUpdated) break;
+                }
 
-            if (result.ModifiedCount == 0)
-                throw new BadRequestException("ظرفیت این جلسه تکمیل شده است");
+                if (sessionUpdated) break;
+            }
+
+            if (!sessionUpdated)
+                throw new NotFoundException("جلسه موردنظر پیدا نشد");
+
+            await _gymRepository.ReplaceOneAsync(gym);
         }
+
+        public async Task IncreaseSessionAvailableCapacityAsync(
+        string gymId,
+        string gymSessionId,
+        bool isMenSession)
+        {
+            var gym = await _gymRepository.FindOneAsync(g => g.GymId == gymId);
+            if (gym == null)
+                throw new NotFoundException("باشگاه پیدا نشد");
+
+            bool sessionFound = false;
+
+            foreach (var trend in gym.Trends)
+            {
+                var genderSessions = isMenSession ? trend.Men : trend.Women;
+                if (genderSessions == null) continue;
+
+                foreach (var category in genderSessions)
+                {
+                    var sessions = category.Sessions;
+                    foreach (var session in sessions)
+                    {
+                        if (session.GymSessionId == gymSessionId)
+                        {
+                            if (session.UsedCapacity >= session.Capacity)
+                                throw new BadRequestException("ظرفیت این جلسه تکمیل شده است");
+
+                            if (session.UsedCapacity == null) session.UsedCapacity = 0;
+                            session.UsedCapacity += 1;
+                            sessionFound = true;
+                            break;
+                        }
+                    }
+
+                    if (sessionFound) break;
+                }
+
+                if (sessionFound) break;
+            }
+
+            if (!sessionFound)
+                throw new NotFoundException("جلسه موردنظر پیدا نشد");
+
+            await _gymRepository.ReplaceOneAsync(gym);
+        }
+
+        //public async Task IncreaseSessionAvailableCapacityAsync(
+        //    string gymId,
+        //    string gymSessionId,
+        //    bool isMenSession)
+        //{
+        //    var sessionPath = isMenSession
+        //        ? "Trends.$[].Men.$[].Sessions.$[s]"
+        //        : "Trends.$[].Women.$[].Sessions.$[s]";
+
+        //    var filter = Builders<Gym>.Filter.Eq(g => g.GymId, gymId);
+
+        //    var update = Builders<Gym>.Update.Inc($"{sessionPath}.UsedCapacity", 1); 
+
+        //    var arrayFilters = new List<ArrayFilterDefinition>
+        //    {
+        //        new BsonDocumentArrayFilterDefinition<BsonDocument>(
+        //            new BsonDocument
+        //            {
+        //                { "s.GymSessionId", gymSessionId },
+        //                {
+        //                    "$expr",
+        //                    new BsonDocument("$lt", new BsonArray
+        //                    {
+        //                        "$s.UsedCapacity",
+        //                        "$s.Capacity"
+        //                    })
+        //                }
+        //            })
+        //    };
+
+        //    var result = await _gymRepository.UpdateManyAsync(
+        //        filter,
+        //        update,
+        //        new UpdateOptions { ArrayFilters = arrayFilters }
+        //    );
+
+        //    if (result.ModifiedCount == 0)
+        //        throw new BadRequestException("ظرفیت این جلسه تکمیل شده است");
+        //}
 
 
         /// <summary>
@@ -1698,7 +1793,7 @@ namespace XFit.Services._Gym
             }
 
             if (isMenSession == null)
-                return; 
+                return;
 
             await DecreaseSessionUsedCapacityAsync(
                 attendance.GymId,
@@ -1707,45 +1802,101 @@ namespace XFit.Services._Gym
             );
         }
 
+
+
         public async Task DecreaseSessionUsedCapacityAsync(
         string gymId,
         string gymSessionId,
         bool isMenSession)
+        {
+            var gym = await _gymRepository.FindOneAsync(g => g.GymId == gymId);
+            if (gym == null) return;
+
+            bool sessionFound = false;
+
+            foreach (var trend in gym.Trends )
             {
-                var sessionPath = isMenSession
-                    ? "Trends.$[].Men.$[].Sessions.$[s]"
-                    : "Trends.$[].Women.$[].Sessions.$[s]";
+                var genderGroups = isMenSession ? trend.Men : trend.Women;
+                if (genderGroups == null) continue;
 
-                var filter = Builders<Gym>.Filter.Eq(g => g.GymId, gymId);
-
-                var update = Builders<Gym>.Update.Inc($"{sessionPath}.UsedCapacity", -1);
-
-                var arrayFilters = new List<ArrayFilterDefinition>
+                foreach (var group in genderGroups)
                 {
-                    new BsonDocumentArrayFilterDefinition<BsonDocument>(
-                        new BsonDocument
+                    var sessions = group.Sessions;
+                    if (sessions == null) continue;
+
+                    foreach (var session in sessions)
+                    {
+                        if (session.TimeType == GymTimeType.FreeTime)
+                            return;
+
+                        if (session.GymSessionId == gymSessionId)
                         {
-                            { "s.GymSessionId", gymSessionId },
+                            if (session.UsedCapacity == null || session.UsedCapacity <= 0)
                             {
-                                "$expr",
-                                new BsonDocument("$gt", new BsonArray
-                                {
-                                    "$s.UsedCapacity",
-                                    0
-                                })
+                                _logger.LogInformation("ظرفیت استفاده‌شده‌ای برای کاهش وجود ندارد");
+                                return;
                             }
-                        })
-                };
 
-                var result = await _gymRepository.UpdateManyAsync(
-                    filter,
-                    update,
-                    new UpdateOptions { ArrayFilters = arrayFilters }
-                );
+                            session.UsedCapacity -= 1;
+                            sessionFound = true;
+                            break;
+                        }
+                    }
 
-                if (result.ModifiedCount == 0)
-                    _logger.LogInformation("ظرفیت استفاده‌شده‌ای برای کاهش وجود ندارد");
+                    if (sessionFound) break;
+                }
+
+                if (sessionFound) break;
             }
+
+            if (!sessionFound)
+            {
+                _logger.LogWarning("جلسه موردنظر برای کاهش ظرفیت پیدا نشد");
+                return;
+            }
+
+            await _gymRepository.ReplaceOneAsync( gym);
+        }
+
+        //public async Task DecreaseSessionUsedCapacityAsync(
+        //string gymId,
+        //string gymSessionId,
+        //bool isMenSession)
+        //{
+        //    var sessionPath = isMenSession
+        //        ? "Trends.$[].Men.$[].Sessions.$[s]"
+        //        : "Trends.$[].Women.$[].Sessions.$[s]";
+
+        //    var filter = Builders<Gym>.Filter.Eq(g => g.GymId, gymId);
+
+        //    var update = Builders<Gym>.Update.Inc($"{sessionPath}.UsedCapacity", -1);
+
+        //    var arrayFilters = new List<ArrayFilterDefinition>
+        //        {
+        //            new BsonDocumentArrayFilterDefinition<BsonDocument>(
+        //                new BsonDocument
+        //                {
+        //                    { "s.GymSessionId", gymSessionId },
+        //                    {
+        //                        "$expr",
+        //                        new BsonDocument("$gt", new BsonArray
+        //                        {
+        //                            "$s.UsedCapacity",
+        //                            0
+        //                        })
+        //                    }
+        //                })
+        //        };
+
+        //    var result = await _gymRepository.UpdateManyAsync(
+        //        filter,
+        //        update,
+        //        new UpdateOptions { ArrayFilters = arrayFilters }
+        //    );
+
+        //    if (result.ModifiedCount == 0)
+        //        _logger.LogInformation("ظرفیت استفاده‌شده‌ای برای کاهش وجود ندارد");
+        //}
 
         public async Task MakeDoneAttendanceAsync(string depositReference)
         {
@@ -1785,7 +1936,7 @@ namespace XFit.Services._Gym
             }
 
             if (session == null) return;
-                //throw new BadRequestException("سشن ورزشی یافت نشد");
+            //throw new BadRequestException("سشن ورزشی یافت نشد");
 
             attendance.GymAttendanceState = GymAttendanceState.Reserved;
             if (session.Capacity.HasValue &&

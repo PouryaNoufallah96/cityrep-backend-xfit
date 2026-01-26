@@ -8,6 +8,7 @@ using XFit.Utilities.Api;
 using XFit.Utilities.Attributes;
 using XFit.Utilities.Filters;
 using XFit.Utilities.MongoDatabase.Filter;
+using XFit.Utilities.Permissions;
 
 namespace XFit.Controllers.V1
 {
@@ -19,21 +20,21 @@ namespace XFit.Controllers.V1
     {
         [HttpPost("[action]")]
         [CustomRateLimit]
-        [Authorize]
+        [Authorize(Permissions.CreateUser)]
         [SwaggerOperation(Summary = "Create a new gym facility", Tags = ["A-Facility"])]
         public async Task<GymFacility> CreateAsync(CreateGymFacilityUpdate update)
             => await _gymFacilityService.CreateAsync(update);
 
         [HttpPost("[action]")]
         [CustomRateLimit]
-        [Authorize]
+        [Authorize(Permissions.CreateUser)]
         [SwaggerOperation(Summary = "Edit an existing gym facility", Tags = ["A-Facility"])]
         public async Task<GymFacility> EditAsync(EditGymFacilityUpdate update)
             => await _gymFacilityService.EditAsync(update);
 
         [HttpPost("[action]")]
         [CustomRateLimit]
-        [Authorize]
+        [Authorize(Permissions.CreateUser)]
         [SwaggerOperation(Summary = "Remove a gym facility", Tags = ["A-Facility"])]
         public async Task<bool> RemoveAsync(RemoveGymFacilityUpdate update)
         {
@@ -43,7 +44,7 @@ namespace XFit.Controllers.V1
 
         [HttpPost("[action]")]
         [CustomRateLimit]
-        [Authorize]
+        [Authorize(Permissions.CreateUser)]
         [SwaggerOperation(Summary = "Get gym facility by id", Tags = ["A-Facility"])]
         public async Task<GymFacility> GetByIdAsync(GymFacilityIdUpdate update)
             => await _gymFacilityService.GetByIdAsync(update);
@@ -51,6 +52,7 @@ namespace XFit.Controllers.V1
 
         [CustomRateLimit]
         [HttpPost("[action]")]
+        [Authorize(Permissions.CreateUser)]
         [SwaggerOperation(Summary = "Get all gym facilities (filtered)", Tags = ["A-Facility"])]
         public async Task<MonjoFilteredResult<GymFacility>> GetAllAsync(MonjoQuery query)
             => await _gymFacilityService.GetAllAsync(query);
