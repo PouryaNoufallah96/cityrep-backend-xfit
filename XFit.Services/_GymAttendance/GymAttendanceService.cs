@@ -146,7 +146,7 @@ namespace XFit.Services._GymAttendance
                 GymTrendId = update.GymTrendId,
                 GymTrendTitle = trend.Title,
                 GymOwnerPublicKey = gym.GymOwnerPublicKey,
-                GymAddress = gym.Address?.Address,
+                GymAddress = gym.Address,
                 GymImageUrl = gym.Images?
                     .OrderBy(i => i.Order)
                     .Select(i => i.ImageUrl)
@@ -176,7 +176,7 @@ namespace XFit.Services._GymAttendance
             session.To
             );
 
-            var remain = clientBalance - attendancePrice;
+            var remain = Math.Abs(clientBalance - attendancePrice);
 
             if (attendancePrice > clientBalance)
             {

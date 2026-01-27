@@ -19,7 +19,7 @@ namespace Xfit.Domain.Collections
         public string GymTrendId { get; set; }
         public string GymTrendTitle { get; set; }
         public string GymOwnerPublicKey { get; set; }
-        public string GymAddress { get; set; }
+        public AddressInfo GymAddress { get; set; } 
         public string GymImageUrl { get; set; }
         public GymTimeType GymTimeType { get; set; }
         public string GymSessionId { get; set; }
