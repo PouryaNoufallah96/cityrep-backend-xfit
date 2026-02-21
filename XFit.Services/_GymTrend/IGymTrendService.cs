@@ -11,5 +11,6 @@ namespace XFit.Services._GymTrend
         Task RemoveAsync(RemoveGymTrendUpdate update);
         Task<GymTrend> GetByIdAsync(GymTrendIdUpdate update);
         Task<MonjoFilteredResult<GymTrend>> GetAllAsync(MonjoQuery query);
+        Task<List<GymTrend>> GetAllAsync();
     }
 }

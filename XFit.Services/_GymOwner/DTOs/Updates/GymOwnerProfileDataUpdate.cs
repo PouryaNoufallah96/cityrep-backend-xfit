@@ -7,7 +7,6 @@ namespace XFit.Services._GymOwner.DTOs.Updates
     {
         public string FullName { get; set; }
         public AddressInfo Address { get; set; } = null;
-        public DateOnly? BirthDay { get; set; } = null;
         public string NationalId { get; set; }
         public string Description { get; set; }
         public Contact Contact { get; set; }

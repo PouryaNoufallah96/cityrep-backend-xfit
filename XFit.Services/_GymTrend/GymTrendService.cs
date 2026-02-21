@@ -1,5 +1,6 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 using Xfit.Domain.Collections;
 using Xfit.Domain.Repositories;
 using Xfit.Domain.Repositories.Contracts;
@@ -117,6 +118,11 @@ namespace XFit.Services._GymTrend
         public Task<MonjoFilteredResult<GymTrend>> GetAllAsync(MonjoQuery query)
         {
             return _gymTrendRepository.FilterByAsync(query);
+        }
+
+        public async Task<List<GymTrend>> GetAllAsync()
+        {
+            return await _gymTrendRepository.AsQueryable().Take(50).ToListAsync();
         }
     }
 }

@@ -61,5 +61,12 @@ namespace XFit.Controllers.V1
         public async Task<MonjoFilteredResult<GymTrend>> GetAllAsync(MonjoQuery query)
             => await _gymTrendService.GetAllAsync(query);
 
+        [CustomRateLimit]
+        [HttpPost("[action]")]
+        [Authorize]
+        [SwaggerOperation(Summary = "Get gym trends list", Tags = ["GO-Trend"])]
+        public async Task<List<GymTrend>> GetAllAsync()
+            => await _gymTrendService.GetAllAsync();
+
     }
 }

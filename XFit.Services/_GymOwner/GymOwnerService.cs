@@ -287,7 +287,7 @@ namespace XFit.Services._GymOwner
 
             gymOwner.FullName = update.FullName; 
             gymOwner.Address = update.Address;
-            gymOwner.BirthDay = update.BirthDay == null ? null : update.BirthDay?.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            gymOwner.BirthDay = null;
             gymOwner.Contact = update.Contact;
             gymOwner.NationalId = update.NationalId;
             gymOwner.Description = update.Description;
