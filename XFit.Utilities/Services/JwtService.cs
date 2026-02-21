@@ -90,7 +90,7 @@ namespace XFit.Utilities.Services
                     new(Claims.Role.ToDisplay(), role),
                     new(Claims.UserType.ToDisplay(), role),
                     new(Claims.PhoneNumber.ToDisplay(), phoneNumber),
-                    new(Claims.FullName.ToDisplay(), fullName),
+                    new(Claims.FullName.ToDisplay(), fullName ?? ""),
                     
                 };
 
