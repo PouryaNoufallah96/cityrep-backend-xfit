@@ -65,7 +65,7 @@ namespace XFit.Controllers.V1
         [HttpPost("[action]")]
         [Authorize]
         [SwaggerOperation(Summary = "Get gym trends list", Tags = ["GO-Trend"])]
-        public async Task<List<GymTrend>> GetAllAsync()
+        public async Task<List<GymTrend>> GetAllForGymOwnerAsync()
             => await _gymTrendService.GetAllAsync();
 
     }
