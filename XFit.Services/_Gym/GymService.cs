@@ -1,5 +1,6 @@
 ﻿using DnsClient.Internal;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.GeoJsonObjectModel;
@@ -42,12 +43,13 @@ namespace XFit.Services._Gym
         /// <returns></returns>
         public async Task<GymResult> AddGymAsync(AddGymUpdate update, string whois)
         {
+            if (update.Images.Count > 10) throw new BadRequestException("تعداد تصاویر باشگاه نمی تواند از ده بیشتر باشد");
 
             var newGym = new Gym
             {
                 Title = update.Title.Trim(),
                 Description = update.Description.Trim(),
-                Level = update.Level,
+                Level = GymLevel.Intermediate,
                 Address = CreateAddressInfo(update.Address),
                 Contact = update.Contact,
                 Images = update.Images,
@@ -55,6 +57,7 @@ namespace XFit.Services._Gym
                 Slug = CreateSlug(update.Title),
                 GymOwnerPublicKey = whois,
                 PriceTrackerDatetime = DateTime.UtcNow,
+
             };
 
             await GetFacilitiesAsync(newGym, update.FacilityIds);
@@ -64,6 +67,498 @@ namespace XFit.Services._Gym
             await _gymRepository.InsertOneAsync(newGym);
             return ConvertToResult(newGym);
         }
+
+
+        /// <summary>
+        /// this method use for edit gallery of gym
+        /// </summary>
+        /// <param name="update"></param>
+        /// <param name="gymOwnerPublicKey"></param>
+        /// <returns></returns>
+        /// <exception cref="BadRequestException"></exception>
+        /// <exception cref="NotFoundException"></exception>
+        public async Task<GymResult> EditGymImagesAsync(
+          EditGymImagesUpdate update,
+          string gymOwnerPublicKey)
+        {
+            if (update.Images.Count > 10)
+                throw new BadRequestException("تعداد تصاویر باشگاه نمی تواند از ده بیشتر باشد");
+
+            var filter = Builders<Gym>.Filter.And(
+                Builders<Gym>.Filter.Eq(x => x.GymId, update.GymId),
+                Builders<Gym>.Filter.Eq(x => x.GymOwnerPublicKey, gymOwnerPublicKey)
+            );
+
+            var updateDefinition = Builders<Gym>.Update
+                .Set(x => x.Images, update.Images);
+
+            var updatedGym = await _gymRepository
+                .FindOneAndUpdateAsync(filter, updateDefinition);
+
+            if (updatedGym == null)
+                throw new NotFoundException("باشگاه مورد نظر یافت نشد");
+
+            return ConvertToResult(updatedGym);
+        }
+
+
+        /// <summary>
+        /// use for edit gym common data
+        /// </summary>
+        /// <param name="update"></param>
+        /// <param name="gymOwnerPublicKey"></param>
+        /// <returns></returns>
+        /// <exception cref="NotFoundException"></exception>
+        public async Task<GymResult> EditGymCommonDataAsync(
+            EditGymCommonDataUpdate update,
+            string gymOwnerPublicKey)
+        {
+            var filter = Builders<Gym>.Filter.And(
+                Builders<Gym>.Filter.Eq(x => x.GymId, update.GymId),
+                Builders<Gym>.Filter.Eq(x => x.GymOwnerPublicKey, gymOwnerPublicKey)
+            );
+
+            var updates = new List<UpdateDefinition<Gym>>();
+
+            if (!string.IsNullOrWhiteSpace(update.Title))
+                updates.Add(Builders<Gym>.Update.Set(x => x.Title, update.Title));
+
+            if (!string.IsNullOrWhiteSpace(update.PhoneNumber))
+                updates.Add(Builders<Gym>.Update.Set("Contact.PhoneNumber", update.PhoneNumber));
+
+            if (update.Genders != null && update.Genders.Any())
+                updates.Add(Builders<Gym>.Update.Set(x => x.SupportedGender, update.Genders));
+
+            if (!string.IsNullOrWhiteSpace(update.AddressText))
+                updates.Add(Builders<Gym>.Update.Set("Address.AddressText", update.AddressText));
+
+            updates.Add(Builders<Gym>.Update.Set(x => x.GymOwnerLastUpdateMoment, DateTime.UtcNow));
+
+            var updateDefinition = Builders<Gym>.Update.Combine(updates);
+
+            var updatedGym = await _gymRepository
+                .FindOneAndUpdateAsync(filter, updateDefinition);
+
+            if (updatedGym == null)
+                throw new NotFoundException("باشگاه مورد نظر یافت نشد");
+
+            return ConvertToResult(updatedGym);
+        }
+
+
+        /// <summary>
+        /// this method use for edit gym location data
+        /// </summary>
+        /// <param name="update"></param>
+        /// <param name="gymOwnerPublicKey"></param>
+        /// <returns></returns>
+        /// <exception cref="BadRequestException"></exception>
+        /// <exception cref="NotFoundException"></exception>
+        public async Task<GymResult> EditGymGeoLocationsync(
+        EditGymGeoLocationUpdate update,
+        string gymOwnerPublicKey)
+        {
+            if (update.GeoLocation == null)
+                throw new BadRequestException("مختصات جغرافیایی الزامی است");
+
+            var filter = Builders<Gym>.Filter.And(
+                Builders<Gym>.Filter.Eq(x => x.GymId, update.GymId),
+                Builders<Gym>.Filter.Eq(x => x.GymOwnerPublicKey, gymOwnerPublicKey)
+            );
+
+            var geoJsonPoint = new GeoJsonPoint<GeoJson2DGeographicCoordinates>(
+                new GeoJson2DGeographicCoordinates(
+                    update.GeoLocation.Longitude,
+                    update.GeoLocation.Latitude
+                )
+            );
+
+            var updateDefinition = Builders<Gym>.Update.Combine(
+                Builders<Gym>.Update.Set("Address.GeoLocation", update.GeoLocation),
+                Builders<Gym>.Update.Set("Address.Location", geoJsonPoint),
+                Builders<Gym>.Update.Set(x => x.GymOwnerLastUpdateMoment, DateTime.UtcNow),
+                Builders<Gym>.Update.Set(x => x.ModifiedMoment, DateTime.UtcNow)
+            );
+
+            var updatedGym = await _gymRepository
+                .FindOneAndUpdateAsync(filter, updateDefinition);
+
+            if (updatedGym == null)
+                throw new NotFoundException("باشگاه مورد نظر یافت نشد");
+
+            return ConvertToResult(updatedGym);
+        }
+
+
+        /// <summary>
+        /// use for add session to gym trend
+        /// </summary>
+        /// <param name="update"></param>
+        /// <param name="gymOwnerPublicKey"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="BadRequestException"></exception>
+        /// <exception cref="NotFoundException"></exception>
+        public async Task<GymResult> AddSessionForGymTrendAsync(
+        AddSessionForGymTrendUpdate update,
+          string gymOwnerPublicKey)
+        {
+            if (string.IsNullOrWhiteSpace(gymOwnerPublicKey))
+                throw new ArgumentException("Invalid owner key");
+
+            if (update?.TrendData == null )
+                throw new BadRequestException("اطلاعات رشته ورزشی نامعتبر است");
+
+            if(update.TrendData.GymTrendId.IsNullOrEmpty()) throw new BadRequestException("اطلاعات رشته ورزشی نامعتبر است");
+
+
+            var gym = await _gymRepository.AsQueryable()
+                .Where(x => x.GymId == update.GymId &&
+                            x.GymOwnerPublicKey == gymOwnerPublicKey)
+                .FirstOrDefaultAsync()
+                ?? throw new NotFoundException("باشگاه یافت نشد");
+
+            var trend = gym.Trends?
+                .FirstOrDefault(t => t.GymTrendId == update.TrendData.GymTrendId)
+                ?? throw new NotFoundException("رشته ورزشی یافت نشد");
+
+
+            ProcessGenderSessions(update.TrendData.Men, trend.Men, gym.Level);
+            ProcessGenderSessions(update.TrendData.Women, trend.Women, gym.Level);
+
+            gym.GymTotalWorkingHour = CalculateGymTotalTimeForGym(gym);
+            gym.WeekPrices = CalculateGymWeekTimeForGym(gym);
+            gym.SupportedTimeType = CalculateSupportedGymTimeTypeForGym(gym);
+
+            await _gymRepository.ReplaceOneAsync(gym);
+
+            return ConvertToResult(gym);
+        }
+
+
+        /// <summary>
+        /// use for process session for trend add session in gym
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="targetDays"></param>
+        /// <param name="gymLevel"></param>
+        /// <exception cref="NotFoundException"></exception>
+        private void ProcessGenderSessions(
+        List<GymTrendWorkingHourUpdate> input,
+        List<GymTrendWorkingHour> targetDays,
+        GymLevel gymLevel)
+        {
+            if (input == null || input.Count == 0)
+                return;
+
+            foreach (var dayUpdate in input)
+            {
+                var targetDay = targetDays?
+                    .FirstOrDefault(d => d.DayOfWeek == dayUpdate.DayOfWeek);
+
+                if (targetDay == null)
+                    throw new NotFoundException("روز انتخاب شده معتبر نیست");
+
+                if (dayUpdate.Sessions == null || dayUpdate.Sessions.Count == 0)
+                    continue;
+
+                if (targetDay.Sessions == null)
+                    targetDay.Sessions = new List<GymSession>();
+
+                var newSessions = new List<GymSession>();
+
+                foreach (var s in dayUpdate.Sessions)
+                {
+                    var session = new GymSession
+                    {
+                        GymSessionId = Guid.NewGuid().ToString("N"),
+                        Price = s.Price,
+                        TimeType = GymTimeType.Session, //s.TimeType,
+                        From = s.From,
+                        To = s.To,
+                        Capacity = s.Capacity,
+                        //UsedCapacity = s.TimeType == GymTimeType.FreeTime ? null : 0,
+                        UsedCapacity = s.Capacity == null ? null : 0,
+                        IsActive = true
+                    };
+
+                    ValidateSessionPrice(session.Price, gymLevel);
+                    ValidateSessionTime(session);
+
+                    newSessions.Add(session);
+                }
+
+                var allSessions = targetDay.Sessions.Concat(newSessions).ToList();
+                ValidateSessionOverlap(allSessions);
+
+                targetDay.Sessions.AddRange(newSessions);
+            }
+        }
+
+
+        /// <summary>
+        /// use for remove a session
+        /// session should did not use in attendances 
+        /// </summary>
+        /// <param name="update"></param>
+        /// <param name="gymOwnerPublicKey"></param>
+        /// <returns></returns>
+        /// <exception cref="NotFoundException"></exception>
+        /// <exception cref="BadRequestException"></exception>
+        public async Task<GymResult> RemoveSessionForGymTrendAsync(
+        RemoveGymSessionUpdate update,
+        string gymOwnerPublicKey)
+        {
+          
+            var gym = await _gymRepository.AsQueryable()
+                .Where(x => x.GymId == update.GymId &&
+                            x.GymOwnerPublicKey == gymOwnerPublicKey)
+                .FirstOrDefaultAsync()
+                ?? throw new NotFoundException("باشگاه یافت نشد");
+
+            var trend = gym.Trends?
+                .FirstOrDefault(t => t.GymTrendId == update.GymTrendId)
+                ?? throw new NotFoundException("رشته ی ورزشی در باشگاه یافت نشد");
+
+            GymSession session = null;
+            GymTrendWorkingHour sessionDayContainer = null;
+
+            void FindSession(IEnumerable<GymTrendWorkingHour> days)
+            {
+                if (days == null || session != null) return;
+
+                foreach (var day in days)
+                {
+                    var found = day.Sessions?
+                        .FirstOrDefault(s => s.GymSessionId == update.GymSessionId);
+
+                    if (found != null)
+                    {
+                        session = found;
+                        sessionDayContainer = day;
+                        return;
+                    }
+                }
+            }
+
+            FindSession(trend.Men);
+            FindSession(trend.Women);
+
+            if (session == null || sessionDayContainer == null)
+                throw new NotFoundException("تایم ورزشی در باشگاه یافت نشد");
+
+            var existsReservedAttendance = await _gymAttendanceRepository.ExistsAsync(
+                q => q.GymId == update.GymId &&
+                     q.GymTrendId == update.GymTrendId &&
+                     q.GymSessionId == update.GymSessionId);
+
+            if (existsReservedAttendance)
+                throw new BadRequestException("امکان حذف این سانس وجود ندارد زیرا دارای رزرو است");
+
+            sessionDayContainer.Sessions.Remove(session);
+
+
+            gym.SupportedTimeType = CalculateSupportedGymTimeTypeForGym(gym);
+            gym.GymTotalWorkingHour = CalculateGymTotalTimeForGym(gym);
+            gym.WeekPrices = CalculateGymWeekTimeForGym(gym);
+
+            await _gymRepository.ReplaceOneAsync(gym);
+
+            return ConvertToResult(gym);
+        }
+
+
+        /// <summary>
+        /// use for De active gym trend 
+        /// </summary>
+        /// <param name="update"></param>
+        /// <param name="gymOwnerPublicKey"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public async Task<GymResult> ActiveOrDeactiveGymTrendAsync(DeactiveGymTrendUpdate update, string gymOwnerPublicKey)
+        {
+            var gym = await _gymRepository.AsQueryable()
+                .Where(x => x.GymId == update.GymId && x.GymOwnerPublicKey == gymOwnerPublicKey)
+                .FirstOrDefaultAsync();
+
+            var trend = gym.Trends
+              ?.FirstOrDefault(t => t.GymTrendId == update.GymTrendId)
+              ?? throw new NotFoundException("رشته ی ورزشی در باشگاه یافت نشد");
+
+            if (trend.IsActive)
+            {
+                var existsTrendInAttendance = await _gymAttendanceRepository.ExistsAsync(
+                    q => q.GymId == update.GymId && q.GymTrendId == update.GymTrendId && q.GymAttendanceState == GymAttendanceState.Reserved);
+                if (existsTrendInAttendance) throw new BadRequestException("امکان غیر فعال کردن وجود ندارد");
+            }
+
+            trend.IsActive = !trend.IsActive;
+
+            await _gymRepository.ReplaceOneAsync(gym);
+
+            return ConvertToResult(gym);
+        }
+
+
+        /// <summary>
+        /// this method use for active or deactive gym session
+        /// </summary>
+        /// <param name="update"></param>
+        /// <param name="gymOwnerPublicKey"></param>
+        /// <returns></returns>
+        /// <exception cref="NotFoundException"></exception>
+        /// <exception cref="BadRequestException"></exception>
+        public async Task<GymResult> ActiveOrDeactiveGymSessionAsync(DeactiveGymSessionUpdate update, string gymOwnerPublicKey)
+        {
+            var gym = await _gymRepository.AsQueryable()
+            .Where(x => x.GymId == update.GymId &&
+                        x.GymOwnerPublicKey == gymOwnerPublicKey)
+            .FirstOrDefaultAsync()
+            ?? throw new NotFoundException("باشگاه یافت نشد");
+
+            var trend = gym.Trends?
+                .FirstOrDefault(t => t.GymTrendId == update.GymTrendId)
+                ?? throw new NotFoundException("رشته ی ورزشی در باشگاه یافت نشد");
+
+            GymSession session = null;
+            DayOfWeek? sessionDay = null;
+
+            void FindSession(IEnumerable<GymTrendWorkingHour> days)
+            {
+                if (days == null || session != null) return;
+
+                foreach (var day in days)
+                {
+                    var found = day.Sessions?
+                        .FirstOrDefault(s => s.GymSessionId == update.GymSessionId);
+
+                    if (found != null)
+                    {
+                        session = found;
+                        sessionDay = day.DayOfWeek;
+                        return;
+                    }
+                }
+            }
+
+            FindSession(trend.Men);
+            FindSession(trend.Women);
+
+            if (session == null || sessionDay == null)
+                throw new NotFoundException("تایم ورزشی در باشگاه یافت نشد");
+
+            if (session.IsActive)
+            {
+                var existsReservedAttendance = await _gymAttendanceRepository.ExistsAsync(
+                    q => q.GymId == update.GymId &&
+                         q.GymTrendId == update.GymTrendId &&
+                         q.GymSessionId == update.GymSessionId &&
+                         q.GymAttendanceState == GymAttendanceState.Reserved);
+
+                if (existsReservedAttendance)
+                    throw new BadRequestException("امکان غیر فعال کردن این سانس وجود ندارد");
+            }
+
+            session.IsActive = !session.IsActive;
+
+            await _gymRepository.ReplaceOneAsync(gym);
+
+            return ConvertToResult(gym);
+
+        }
+
+
+
+        public async Task<GymSessionsListResult> GetGymSessionsListAsync(
+        GymSessionsListUpdate update,
+        string gymOwnerPublicKey)
+        {
+            if (string.IsNullOrWhiteSpace(gymOwnerPublicKey))
+                throw new ArgumentException("Invalid owner key", nameof(gymOwnerPublicKey));
+
+            var gym = await _gymRepository.AsQueryable()
+                .Where(x => x.GymOwnerPublicKey == gymOwnerPublicKey)
+                .FirstOrDefaultAsync()
+                ?? throw new NotFoundException("باشگاه یافت نشد");
+
+            if (gym.Trends == null || !gym.Trends.Any())
+                return new GymSessionsListResult();
+
+            var allSessions = gym.Trends
+                .Where(trend => !update.GymTrendIds.Any() || update.GymTrendIds.Contains(trend.GymTrendId))
+                .SelectMany(trend =>
+                {
+                    var sessions = new List<GymSessionResult>();
+
+                    void AddGenderSessions(List<GymTrendWorkingHour> workingHours, Gender gender)
+                    {
+                        if (workingHours == null) return;
+
+                        var filtered = workingHours
+                            .Where(day => !update.Days.Any() || update.Days.Contains(day.DayOfWeek))
+                            .SelectMany(day => day.Sessions ?? new List<GymSession>())
+                            .Where(session =>
+                                !update.SessionActivity.Any() ||
+                                (update.SessionActivity.Contains(GymSessionActivity.Active) && session.IsActive) ||
+                                (update.SessionActivity.Contains(GymSessionActivity.Deactive) && !session.IsActive))
+                            .Select(session => new GymSessionResult
+                            {
+                                GymId = gym.GymId,
+                                GymTitle = gym.Title,
+                                GymTrendId = trend.GymTrendId,
+                                GymTrendName = trend.Title,
+                                GymSessionId = session.GymSessionId,
+                                Price = session.Price,
+                                TimeType = session.TimeType,
+                                From = session.From,
+                                To = session.To,
+                                Capacity = session.Capacity,
+                                UsedCapacity = session.UsedCapacity,
+                                IsActive = session.IsActive,
+                                Gender = gender
+                            });
+
+                        sessions.AddRange(filtered);
+                    }
+
+                    if (!update.Genders.Any() || update.Genders.Contains(Gender.Male))
+                        AddGenderSessions(trend.Men, Gender.Male);
+
+                    if (!update.Genders.Any() || update.Genders.Contains(Gender.Female))
+                        AddGenderSessions(trend.Women, Gender.Female);
+
+                    return sessions;
+                })
+                .ToList();
+
+            // 🔍 فیلتر جستجو
+            if (!string.IsNullOrWhiteSpace(update.Search))
+            {
+                var search = update.Search.Trim().ToLower();
+                allSessions = allSessions
+                    .Where(x => x.GymTrendName.ToLower().Contains(search) || x.GymSessionId.ToLower().Contains(search))
+                    .ToList();
+            }
+
+            // 📄 Pagination
+            var totalCount = allSessions.Count;
+            var pageSize = update.Pagination?.Size ?? 25;
+            var page = update.Pagination?.Page ?? 1;
+
+            var pagedData = allSessions
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return new GymSessionsListResult
+            {
+                Data = pagedData,
+                TotalCount = totalCount,
+                PageCount = (int)Math.Ceiling((double)totalCount / pageSize)
+            };
+        }
+
+
 
 
         /// <summary>
@@ -134,7 +629,7 @@ namespace XFit.Services._Gym
             }
 
             gym.Trends = result;
-            gym.SupportedGender = CalculateSupportedGenderForGym(gym);
+            //gym.SupportedGender = CalculateSupportedGenderForGym(gym);
             gym.SupportedTimeType = CalculateSupportedGymTimeTypeForGym(gym);
             gym.GymTotalWorkingHour = CalculateGymTotalTimeForGym(gym);
             gym.WeekPrices = CalculateGymWeekTimeForGym(gym);
@@ -275,10 +770,10 @@ namespace XFit.Services._Gym
             if (session.From >= session.To)
                 throw new BadRequestException("زمان شروع باید کمتر از زمان پایان باشد");
 
-            var duration = session.To - session.From;
+            //var duration = session.To - session.From;
 
-            if (!AllowedSessionDurations.Contains(duration))
-                throw new BadRequestException("مدت زمان هر سشن فقط می‌تواند 1، 1.5، 2 یا 3 ساعت باشد");
+            //if (!AllowedSessionDurations.Contains(duration))
+            //    throw new BadRequestException("مدت زمان هر سشن فقط می‌تواند 1، 1.5، 2 یا 3 ساعت باشد");
         }
 
 
@@ -1224,33 +1719,33 @@ namespace XFit.Services._Gym
         }
 
 
-        /// <summary>
-        /// use for upsert gym trend data by admin
-        /// </summary>
-        /// <param name="update"></param>
-        /// <returns></returns>
-        /// <exception cref="BadRequestException"></exception>
-        public async Task<GymAdminResult> UpsertGymTrendsByAdminAsync(
-         UpsertGymTrendsUpdateByAdmin update)
-        {
-            var gym = await _gymRepository.AsQueryable()
-                .Where(x => x.GymId == update.GymId &&
-                            x.GymOwnerPublicKey == update.GymOwnerPublicKey)
-                .FirstOrDefaultAsync();
+        ///// <summary>
+        ///// use for upsert gym trend data by admin
+        ///// </summary>
+        ///// <param name="update"></param>
+        ///// <returns></returns>
+        ///// <exception cref="BadRequestException"></exception>
+        //public async Task<GymAdminResult> UpsertGymTrendsByAdminAsync(
+        // UpsertGymTrendsUpdateByAdmin update)
+        //{
+        //    var gym = await _gymRepository.AsQueryable()
+        //        .Where(x => x.GymId == update.GymId &&
+        //                    x.GymOwnerPublicKey == update.GymOwnerPublicKey)
+        //        .FirstOrDefaultAsync();
 
 
-            if (gym == null)
-                throw new BadRequestException("Gym not found or access denied");
+        //    if (gym == null)
+        //        throw new BadRequestException("Gym not found or access denied");
 
-            await ApplyGymTrendsUpsert(gym, update.Trends);
+        //    await ApplyGymTrendsUpsert(gym, update.Trends);
 
-            gym.ModifiedMoment = DateTime.UtcNow;
-            gym.GymOwnerLastUpdateMoment = DateTime.UtcNow;
+        //    gym.ModifiedMoment = DateTime.UtcNow;
+        //    gym.GymOwnerLastUpdateMoment = DateTime.UtcNow;
 
-            await _gymRepository.ReplaceOneAsync(gym);
+        //    await _gymRepository.ReplaceOneAsync(gym);
 
-            return ConvertToAdminResult(gym);
-        }
+        //    return ConvertToAdminResult(gym);
+        //}
 
 
         /// <summary>
@@ -1321,6 +1816,8 @@ namespace XFit.Services._Gym
 
 
         #endregion
+
+
 
 
         #region Internal
@@ -1502,7 +1999,7 @@ namespace XFit.Services._Gym
             if (gymSession == null)
                 throw new ArgumentNullException(nameof(gymSession));
 
-            if(gymSession.UsedCapacity == null) gymSession.UsedCapacity = 0;
+            if (gymSession.UsedCapacity == null) gymSession.UsedCapacity = 0;
 
             gymSession.UsedCapacity += 1;
 
@@ -1814,7 +2311,7 @@ namespace XFit.Services._Gym
 
             bool sessionFound = false;
 
-            foreach (var trend in gym.Trends )
+            foreach (var trend in gym.Trends)
             {
                 var genderGroups = isMenSession ? trend.Men : trend.Women;
                 if (genderGroups == null) continue;
@@ -1855,7 +2352,7 @@ namespace XFit.Services._Gym
                 return;
             }
 
-            await _gymRepository.ReplaceOneAsync( gym);
+            await _gymRepository.ReplaceOneAsync(gym);
         }
 
         //public async Task DecreaseSessionUsedCapacityAsync(
@@ -1948,6 +2445,8 @@ namespace XFit.Services._Gym
 
             await _gymAttendanceRepository.ReplaceOneAsync(attendance);
         }
+
+       
     }
 }
 

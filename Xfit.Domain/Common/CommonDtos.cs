@@ -10,10 +10,10 @@ namespace Xfit.Domain.Common
         //public GeoLocation? Location { get; set; } = null; //[ Longitude , Latitude ]
         [JsonIgnore]public GeoJsonPoint<GeoJson2DGeographicCoordinates> Location { get; set; }
         public GeoLocation GeoLocation { get; set; }
-        public string Province { get; set; } 
-        public string City { get; set; }
+        public string Province { get; set; } = "تهران";
+        public string City { get; set; } = "تهران";
         public string Address { get; set; }
-        public string PostalCode { get; set; }
+        public string PostalCode { get; set; } = null;
     }
 
     public class GeoLocation

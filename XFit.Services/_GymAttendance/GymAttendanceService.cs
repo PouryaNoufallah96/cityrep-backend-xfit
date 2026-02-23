@@ -26,7 +26,7 @@ namespace XFit.Services._GymAttendance
         IDepositService _depositService,
         IRandomService _randomService,
         IWalletService _walletService,
-        IGymClosureRepository _gymClosureRepository,
+        //IGymClosureRepository _gymClosureRepository,
         IDepositRepository _depositRepository) : IGymAttendanceService, IScopedDependency
     {
 
@@ -49,6 +49,8 @@ namespace XFit.Services._GymAttendance
             var trend = gym.Trends
                 ?.FirstOrDefault(t => t.GymTrendId == update.GymTrendId)
                 ?? throw new NotFoundException("رشته ی ورزشی در باشگاه یافت نشد");
+
+            if (!trend.IsActive) throw new BadRequestException("رشته ی مورد نظر غیر فعال می باشد");
 
             GymSession session = null;
             DayOfWeek? sessionDay = null;
@@ -76,7 +78,7 @@ namespace XFit.Services._GymAttendance
 
             if (session == null || sessionDay == null)
                 throw new NotFoundException("تایم ورزشی در باشگاه یافت نشد");
-
+            if (!session.IsActive) throw new BadRequestException("بازه ی زمانی مورد نظر غیر فعال می باشد");
 
             if (session.TimeType == GymTimeType.Session &&
             session.Capacity.HasValue &&
@@ -169,12 +171,12 @@ namespace XFit.Services._GymAttendance
                 GymAttendanceState = GymAttendanceState.Reserved,
             };
 
-            await CheckGymIsOpenForSessionAsync(
-            gym.GymId,
-            newAttendance.SessionDate,
-            session.From,
-            session.To
-            );
+            //await CheckGymIsOpenForSessionAsync(
+            //gym.GymId,
+            //newAttendance.SessionDate,
+            //session.From,
+            //session.To
+            //);
 
             var remain = Math.Abs(clientBalance - attendancePrice);
 
@@ -202,35 +204,35 @@ namespace XFit.Services._GymAttendance
 
 
 
-        private async Task CheckGymIsOpenForSessionAsync(
-        string gymId,
-        DateTime sessionDate,
-        long sessionFrom,
-        long sessionTo)
-        {
-            var closures = await _gymClosureRepository.AsQueryable()
-                .Where(c =>
-                    c.GymId == gymId &&
-                    c.ClosureDate.Date == sessionDate.Date
-                )
-                .ToListAsync();
+        //private async Task CheckGymIsOpenForSessionAsync(
+        //string gymId,
+        //DateTime sessionDate,
+        //long sessionFrom,
+        //long sessionTo)
+        //{
+        //    var closures = await _gymClosureRepository.AsQueryable()
+        //        .Where(c =>
+        //            c.GymId == gymId &&
+        //            c.ClosureDate.Date == sessionDate.Date
+        //        )
+        //        .ToListAsync();
 
-            foreach (var closure in closures)
-            {
-                if (closure.IsAllDay)
-                    throw new BadRequestException("باشگاه در این تاریخ تعطیل می‌باشد");
+        //    foreach (var closure in closures)
+        //    {
+        //        if (closure.IsAllDay)
+        //            throw new BadRequestException("باشگاه در این تاریخ تعطیل می‌باشد");
 
-                if (closure.From.HasValue && closure.To.HasValue)
-                {
-                    var overlap =
-                        sessionFrom < closure.To.Value &&
-                        sessionTo > closure.From.Value;
+        //        if (closure.From.HasValue && closure.To.HasValue)
+        //        {
+        //            var overlap =
+        //                sessionFrom < closure.To.Value &&
+        //                sessionTo > closure.From.Value;
 
-                    if (overlap)
-                        throw new BadRequestException("باشگاه در این بازه زمانی تعطیل می‌باشد");
-                }
-            }
-        }
+        //            if (overlap)
+        //                throw new BadRequestException("باشگاه در این بازه زمانی تعطیل می‌باشد");
+        //        }
+        //    }
+        //}
 
 
         /// <summary>

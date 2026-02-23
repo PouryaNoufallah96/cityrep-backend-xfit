@@ -8,13 +8,15 @@ namespace XFit.Services._Gym.DTOs.Updates
     {
         public string Title { get; set; }
         public string Description { get; set; }
-        public GymLevel Level { get; set; }
+        //public GymLevel Level { get; set; }
         //public decimal Price { get; set; } 
         public AddressInfoUpdate Address { get; set; } 
         public Contact Contact { get; set; } = null;
         public List<GymImage> Images { get; set; } = null;
         public List<GymTrendInfoUpdate> Trends { get; set; } = null;
         public List<string> FacilityIds { get; set; } = null;
+        public List<Gender> SupportedGender { get; set; }
+
     }
 
     public class AddressInfoUpdate
@@ -35,7 +37,6 @@ namespace XFit.Services._Gym.DTOs.Updates
         public string GymId { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
-        public decimal Price { get; set; }
         public AddressInfoUpdate Address { get; set; }
         public Contact Contact { get; set; } = null;
         public List<GymImage> Images { get; set; } = null;

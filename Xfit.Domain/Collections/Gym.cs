@@ -14,12 +14,12 @@ namespace Xfit.Domain.Collections
         public string Title { get; set; }
         public string Description { get; set; }
         public GymLevel Level { get; set; }
-        public DateTime PriceTrackerDatetime { get; set; }  
+        public DateTime PriceTrackerDatetime { get; set; }
         public string Slug { get; set; }
-         
+
         public List<Gender> SupportedGender { get; set; }
-        public List<GymTimeType> SupportedTimeType { get; set; } 
-        public GymState State { get; set; } 
+        public List<GymTimeType> SupportedTimeType { get; set; }
+        public GymState State { get; set; }
 
         public AddressInfo Address { get; set; }
         public List<GymTotalWorkingHour> GymTotalWorkingHour { get; set; }
@@ -32,10 +32,10 @@ namespace Xfit.Domain.Collections
         public decimal Rate { get; set; }
         public decimal RateCount { get; set; }
 
-        public List<WeekPriceDetail> WeekPrices { get; set; } = new List<WeekPriceDetail>(); 
+        public List<WeekPriceDetail> WeekPrices { get; set; } = new List<WeekPriceDetail>();
     }
 
-    
+
     public enum GymState
     {
         NotVerified,
@@ -59,8 +59,9 @@ namespace Xfit.Domain.Collections
     public class GymTrendInfo
     {
         public string GymTrendId { get; set; }
-        public string TrendIconUrl { get; set; }  
+        public string TrendIconUrl { get; set; }
         public string Title { get; set; }
+        [BsonDefaultValue(true)] public bool IsActive { get; set; } = true;
 
         public List<GymTrendWorkingHour> Men { get; set; } = null;
         public List<GymTrendWorkingHour> Women { get; set; } = null;
@@ -80,8 +81,8 @@ namespace Xfit.Domain.Collections
 
     public class GymTrendWorkingHour
     {
-        public DayOfWeek DayOfWeek { get; set; }       
-        
+        public DayOfWeek DayOfWeek { get; set; }
+
         public List<GymSession> Sessions { get; set; }
     }
 
@@ -94,12 +95,13 @@ namespace Xfit.Domain.Collections
     public class GymSession
     {
         public string GymSessionId { get; set; } = Guid.NewGuid().ToString("N");
-        public decimal Price { get; set; } 
+        public decimal Price { get; set; }
         public GymTimeType TimeType { get; set; }
         public long From { get; set; }
         public long To { get; set; }
         public int? Capacity { get; set; } = null;
-        [BsonDefaultValue(null)]public int? UsedCapacity { get; set; } = null; 
+        [BsonDefaultValue(null)] public int? UsedCapacity { get; set; } = null;
+        [BsonDefaultValue(true)] public bool IsActive { get; set; } = true; 
     }
 
 
@@ -107,9 +109,9 @@ namespace Xfit.Domain.Collections
     {
         public DayOfWeek DayOfWeek { get; set; }
         public decimal MinPrice { get; set; }
-        public decimal MaxPrice { get; set; } 
+        public decimal MaxPrice { get; set; }
     }
-     
+
     public class GymTotalWorkingHour
     {
         public DayOfWeek DayOfWeek { get; set; }

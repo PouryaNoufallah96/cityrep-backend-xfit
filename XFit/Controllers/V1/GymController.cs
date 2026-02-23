@@ -26,12 +26,39 @@ namespace XFit.Controllers.V1
         public async Task<GymResult> AddGymAsync(AddGymUpdate update)
         => await _gymService.AddGymAsync(update, PublicKey);
 
+
+
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
-        [SwaggerOperation(Summary = "Edit an existing gym", Tags = ["GO-Gym"])]
-        public async Task<GymResult> EditGymAsync(EditGymUpdate update)
-            => await _gymService.EditGymAsync(update, PublicKey);
+        [SwaggerOperation(Summary = "Edit gym images", Tags = ["GO-Gym"])]
+        public async Task<GymResult> EditGymImagesAsync(EditGymImagesUpdate update)
+        => await _gymService.EditGymImagesAsync(update, PublicKey);
+
+
+        [HttpPost("[action]")]
+        [CustomRateLimit]
+        [Authorize]
+        [SwaggerOperation(Summary = "Edit gym common data", Tags = ["GO-Gym"])]
+        public async Task<GymResult> EditGymCommonDataAsync(EditGymCommonDataUpdate update)
+        => await _gymService.EditGymCommonDataAsync(update, PublicKey);
+
+
+        [HttpPost("[action]")]
+        [CustomRateLimit]
+        [Authorize]
+        [SwaggerOperation(Summary = "Edit gym geo location", Tags = ["GO-Gym"])]
+        public async Task<GymResult> EditGymGeoLocationsync(EditGymGeoLocationUpdate update)
+        => await _gymService.EditGymGeoLocationsync(update, PublicKey);
+
+        //[HttpPost("[action]")]
+        //[CustomRateLimit]
+        //[Authorize]
+        //[SwaggerOperation(Summary = "Edit an existing gym", Tags = ["GO-Gym"])]
+        //public async Task<GymResult> EditGymAsync(EditGymUpdate update)
+        //    => await _gymService.EditGymAsync(update, PublicKey);
+
+
 
         [HttpPost("[action]")]
         [CustomRateLimit]
