@@ -27,7 +27,6 @@ namespace XFit.Controllers.V1
         => await _gymService.AddGymAsync(update, PublicKey);
 
 
-
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
@@ -51,13 +50,44 @@ namespace XFit.Controllers.V1
         public async Task<GymResult> EditGymGeoLocationsync(EditGymGeoLocationUpdate update)
         => await _gymService.EditGymGeoLocationsync(update, PublicKey);
 
-        //[HttpPost("[action]")]
-        //[CustomRateLimit]
-        //[Authorize]
-        //[SwaggerOperation(Summary = "Edit an existing gym", Tags = ["GO-Gym"])]
-        //public async Task<GymResult> EditGymAsync(EditGymUpdate update)
-        //    => await _gymService.EditGymAsync(update, PublicKey);
+        [HttpPost("[action]")]
+        [CustomRateLimit]
+        [Authorize]
+        [SwaggerOperation(Summary = "Add session to gym trend", Tags = ["GO-Gym"])]
+        public async Task<GymResult> AddSessionForGymTrendAsync(AddSessionForGymTrendUpdate update)
+        => await _gymService.AddSessionForGymTrendAsync(update, PublicKey);
 
+
+        [HttpPost("[action]")]
+        [CustomRateLimit]
+        [Authorize]
+        [SwaggerOperation(Summary = "Remove session from gym trend", Tags = ["GO-Gym"])]
+        public async Task<GymResult> RemoveSessionForGymTrendAsync(RemoveGymSessionUpdate update)
+            => await _gymService.RemoveSessionForGymTrendAsync(update, PublicKey);
+
+
+        [HttpPost("[action]")]
+        [CustomRateLimit]
+        [Authorize]
+        [SwaggerOperation(Summary = "Activate or deactivate gym trend", Tags = ["GO-Gym"])]
+        public async Task<GymResult> ToggleGymActivityTrendAsync(DeactiveGymTrendUpdate update)
+            => await _gymService.ActiveOrDeactiveGymTrendAsync(update, PublicKey);
+
+
+        [HttpPost("[action]")]
+        [CustomRateLimit]
+        [Authorize]
+        [SwaggerOperation(Summary = "Activate or deactivate gym session", Tags = ["GO-Gym"])]
+        public async Task<GymResult> ToggleGymSessionActivityAsync(DeactiveGymSessionUpdate update)
+            => await _gymService.ActiveOrDeactiveGymSessionAsync(update, PublicKey); 
+
+
+        [HttpPost("[action]")]
+        [CustomRateLimit]
+        [Authorize]
+        [SwaggerOperation(Summary = "Get gym sessions list", Tags = ["GO-Gym"])]
+        public async Task<GymSessionsListResult> GetGymSessionsListAsync(GymSessionsListUpdate update)
+            => await _gymService.GetGymSessionsListAsync(update, PublicKey);
 
 
         [HttpPost("[action]")]
@@ -67,12 +97,32 @@ namespace XFit.Controllers.V1
         public async Task<GymListResult> GetAllGymsAsync(GymSimpleFilter filter)
             => await _gymService.GetAllGymsAsync(filter, PublicKey);
 
-        [HttpPost("[action]")]
-        [CustomRateLimit]
-        [Authorize]
-        [SwaggerOperation(Summary = "Upsert gym trend data", Tags = ["GO-Gym"])]
-        public async Task<GymResult> UpsertGymTrendsAsync(UpsertGymTrendsUpdate update)
-            => await _gymService.UpsertGymTrendsAsync(update, PublicKey);
+
+
+        //[HttpPost("[action]")]
+        //[CustomRateLimit]
+        //[Authorize]
+        //[SwaggerOperation(Summary = "Upsert gym trend data", Tags = ["GO-Gym"])]
+        //public async Task<GymResult> UpsertGymTrendsAsync(UpsertGymTrendsUpdate update)
+        //    => await _gymService.UpsertGymTrendsAsync(update, PublicKey);
+
+
+        //[HttpPost("[action]")]
+        //[CustomRateLimit]
+        //[Authorize]
+        //[SwaggerOperation(Summary = "Edit an existing gym", Tags = ["GO-Gym"])]
+        //public async Task<GymResult> EditGymAsync(EditGymUpdate update)
+        //    => await _gymService.EditGymAsync(update, PublicKey);
+
+
+
+
+
+
+
+
+
+
 
 
         // ===== Client Side =====
@@ -127,12 +177,12 @@ namespace XFit.Controllers.V1
         public async Task<GymAdminResult> RemoveGymByAdminAsync(GymIdUpdate gymIdUpdate)
             => await _gymService.RemoveGymByAdminAsync(gymIdUpdate);
 
-        [HttpPost("[action]")]
-        [CustomRateLimit]
-        [Authorize]
-        [SwaggerOperation(Summary = "upsert gym trends data by admin", Tags = ["A-Gym"])]
-        public async Task<GymAdminResult> UpsertGymTrendsByAdminAsync(UpsertGymTrendsUpdateByAdmin update)
-            => await _gymService.UpsertGymTrendsByAdminAsync(update);
+        //[HttpPost("[action]")]
+        //[CustomRateLimit]
+        //[Authorize]
+        //[SwaggerOperation(Summary = "upsert gym trends data by admin", Tags = ["A-Gym"])]
+        //public async Task<GymAdminResult> UpsertGymTrendsByAdminAsync(UpsertGymTrendsUpdateByAdmin update)
+        //    => await _gymService.UpsertGymTrendsByAdminAsync(update);
 
     }
 }

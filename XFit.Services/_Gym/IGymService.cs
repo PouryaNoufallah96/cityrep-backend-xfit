@@ -24,7 +24,7 @@ namespace XFit.Services._Gym
 
         Task<GymResult> EditGymAsync(EditGymUpdate update, string gymOwnerPublicKey);
         Task<GymListResult> GetAllGymsAsync(GymSimpleFilter filter, string whois);
-        Task<GymResult> UpsertGymTrendsAsync(UpsertGymTrendsUpdate update, string whois);
+        //Task<GymResult> UpsertGymTrendsAsync(UpsertGymTrendsUpdate update, string whois);
 
 
         //client

@@ -468,10 +468,17 @@ namespace XFit.Services._Gym
         }
 
 
-
+        /// <summary>
+        /// use for gym session List
+        /// </summary>
+        /// <param name="update"></param>
+        /// <param name="gymOwnerPublicKey"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="NotFoundException"></exception>
         public async Task<GymSessionsListResult> GetGymSessionsListAsync(
-        GymSessionsListUpdate update,
-        string gymOwnerPublicKey)
+         GymSessionsListUpdate update,
+         string gymOwnerPublicKey)
         {
             if (string.IsNullOrWhiteSpace(gymOwnerPublicKey))
                 throw new ArgumentException("Invalid owner key", nameof(gymOwnerPublicKey));
@@ -485,7 +492,8 @@ namespace XFit.Services._Gym
                 return new GymSessionsListResult();
 
             var allSessions = gym.Trends
-                .Where(trend => !update.GymTrendIds.Any() || update.GymTrendIds.Contains(trend.GymTrendId))
+                .Where(trend => !update.GymTrendIds.Any()
+                                || update.GymTrendIds.Contains(trend.GymTrendId))
                 .SelectMany(trend =>
                 {
                     var sessions = new List<GymSessionResult>();
@@ -495,28 +503,31 @@ namespace XFit.Services._Gym
                         if (workingHours == null) return;
 
                         var filtered = workingHours
-                            .Where(day => !update.Days.Any() || update.Days.Contains(day.DayOfWeek))
-                            .SelectMany(day => day.Sessions ?? new List<GymSession>())
-                            .Where(session =>
-                                !update.SessionActivity.Any() ||
-                                (update.SessionActivity.Contains(GymSessionActivity.Active) && session.IsActive) ||
-                                (update.SessionActivity.Contains(GymSessionActivity.Deactive) && !session.IsActive))
-                            .Select(session => new GymSessionResult
-                            {
-                                GymId = gym.GymId,
-                                GymTitle = gym.Title,
-                                GymTrendId = trend.GymTrendId,
-                                GymTrendName = trend.Title,
-                                GymSessionId = session.GymSessionId,
-                                Price = session.Price,
-                                TimeType = session.TimeType,
-                                From = session.From,
-                                To = session.To,
-                                Capacity = session.Capacity,
-                                UsedCapacity = session.UsedCapacity,
-                                IsActive = session.IsActive,
-                                Gender = gender
-                            });
+                            .Where(day => !update.Days.Any()
+                                          || update.Days.Contains(day.DayOfWeek))
+
+                            .SelectMany(day => (day.Sessions ?? new List<GymSession>())
+                                .Where(session =>
+                                    !update.SessionActivity.Any() ||
+                                    (update.SessionActivity.Contains(GymSessionActivity.Active) && session.IsActive) ||
+                                    (update.SessionActivity.Contains(GymSessionActivity.Deactive) && !session.IsActive))
+                                .Select(session => new GymSessionResult
+                                {
+                                    GymId = gym.GymId,
+                                    GymTitle = gym.Title,
+                                    GymTrendId = trend.GymTrendId,
+                                    GymTrendName = trend.Title,
+                                    GymSessionId = session.GymSessionId,
+                                    DayOfWeek = day.DayOfWeek,
+                                    Price = session.Price,
+                                    TimeType = session.TimeType,
+                                    From = session.From,
+                                    To = session.To,
+                                    Capacity = session.Capacity,
+                                    UsedCapacity = session.UsedCapacity,
+                                    IsActive = session.IsActive,
+                                    Gender = gender
+                                }));
 
                         sessions.AddRange(filtered);
                     }
@@ -531,16 +542,16 @@ namespace XFit.Services._Gym
                 })
                 .ToList();
 
-            // 🔍 فیلتر جستجو
             if (!string.IsNullOrWhiteSpace(update.Search))
             {
                 var search = update.Search.Trim().ToLower();
                 allSessions = allSessions
-                    .Where(x => x.GymTrendName.ToLower().Contains(search) || x.GymSessionId.ToLower().Contains(search))
+                    .Where(x =>
+                        x.GymTrendName.ToLower().Contains(search) ||
+                        x.GymSessionId.ToLower().Contains(search))
                     .ToList();
             }
 
-            // 📄 Pagination
             var totalCount = allSessions.Count;
             var pageSize = update.Pagination?.Size ?? 25;
             var page = update.Pagination?.Page ?? 1;
@@ -1152,38 +1163,38 @@ namespace XFit.Services._Gym
         }
 
 
-        /// <summary>
-        /// use for upsert gym trends
-        /// </summary>
-        /// <param name="update"></param>
-        /// <param name="whois"></param>
-        /// <returns></returns>
-        /// <exception cref="BadRequestException"></exception>
-        public async Task<GymResult> UpsertGymTrendsAsync(
-         UpsertGymTrendsUpdate update,
-         string whois)
-        {
-            var gym = await _gymRepository.AsQueryable()
-                .Where(x => x.GymId == update.GymId &&
-                            x.GymOwnerPublicKey == whois)
-                .FirstOrDefaultAsync();
+        ///// <summary>
+        ///// use for upsert gym trends
+        ///// </summary>
+        ///// <param name="update"></param>
+        ///// <param name="whois"></param>
+        ///// <returns></returns>
+        ///// <exception cref="BadRequestException"></exception>
+        //public async Task<GymResult> UpsertGymTrendsAsync(
+        // UpsertGymTrendsUpdate update,
+        // string whois)
+        //{
+        //    var gym = await _gymRepository.AsQueryable()
+        //        .Where(x => x.GymId == update.GymId &&
+        //                    x.GymOwnerPublicKey == whois)
+        //        .FirstOrDefaultAsync();
 
-            if (gym.GymOwnerLastUpdateMoment.AddDays(7) > DateTime.UtcNow)
-                throw new BadRequestException("شما فقط هر هفته یکبار می‌توانید تغییرات رشته‌های ورزشی را اعمال کنید");
+        //    if (gym.GymOwnerLastUpdateMoment.AddDays(7) > DateTime.UtcNow)
+        //        throw new BadRequestException("شما فقط هر هفته یکبار می‌توانید تغییرات رشته‌های ورزشی را اعمال کنید");
 
-            if (gym == null)
-                throw new BadRequestException("Gym not found or access denied");
+        //    if (gym == null)
+        //        throw new BadRequestException("Gym not found or access denied");
 
-            await ApplyGymTrendsUpsert(gym, update.Trends);
+        //    await ApplyGymTrendsUpsert(gym, update.Trends);
 
-            //gym.State = GymState.NotVerified;
-            gym.ModifiedMoment = DateTime.UtcNow;
-            gym.GymOwnerLastUpdateMoment = DateTime.UtcNow;
+        //    //gym.State = GymState.NotVerified;
+        //    gym.ModifiedMoment = DateTime.UtcNow;
+        //    gym.GymOwnerLastUpdateMoment = DateTime.UtcNow;
 
-            await _gymRepository.ReplaceOneAsync(gym);
+        //    await _gymRepository.ReplaceOneAsync(gym);
 
-            return ConvertToResult(gym);
-        }
+        //    return ConvertToResult(gym);
+        //}
 
 
         /// <summary>
@@ -1623,7 +1634,7 @@ namespace XFit.Services._Gym
             {
                 Title = update.Title,
                 Description = update.Description,
-                Level = update.Level,
+                //Level = update.Level,
                 Address = update.Address,
                 Contact = update.Contact,
                 Images = update.Images,

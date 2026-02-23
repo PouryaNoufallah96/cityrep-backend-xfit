@@ -17,6 +17,7 @@ namespace XFit.Services._Gym.DTOs.Results
         public string GymTrendId { get; set; }
         public string GymTrendName { get; set; }
         public string GymSessionId { get; set; }
+        public DayOfWeek DayOfWeek { get; set; } 
         public decimal Price { get; set; }
         public GymTimeType TimeType { get; set; }
         public long From { get; set; }
