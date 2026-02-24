@@ -30,9 +30,10 @@ namespace XFit.Services._Wallet
         {
 
             var wallet = await _walletRepository.AsQueryable()
-                .FirstOrDefaultAsync(q => q.WalletId == whois);
+                .FirstOrDefaultAsync(q => q.PublicKey == whois);
 
             if (wallet != null)
+            {
                 return new WalletResult
                 {
                     WalletId = wallet.WalletId,
@@ -40,13 +41,13 @@ namespace XFit.Services._Wallet
                     AvailableBalance = wallet.AvailableBalance,
                     FrozenBalance = wallet.FrozenBalance
                 };
+            }
+           
+            //if (userRole.ToLower() == "client")
+            //    return await SyncClientWalletAsync(whois);
 
-
-            if (userRole.ToLower() == "client")
-                return await SyncClientWalletAsync(whois);
-
-            else if (userRole.ToLower() == "gymowner")
-                return await SyncGymOwnerWalletAsync(whois);
+            //else if (userRole.ToLower() == "gymowner")
+            //    return await SyncGymOwnerWalletAsync(whois);
 
             else throw new BadRequestException("کاربر نامشخص");
 
@@ -60,7 +61,7 @@ namespace XFit.Services._Wallet
         /// <returns></returns>
         public async Task MakeWalletShouldUpdateAsync(string publicKey)
         {
-            var filter = Builders<Wallet>.Filter.Eq(q => q.WalletId, publicKey);
+            var filter = Builders<Wallet>.Filter.Eq(q => q.PublicKey, publicKey);
             var update = Builders<Wallet>.Update.Set(q => q.ShouldUpdate, true);
             await _walletRepository.FindOneAndUpdateAsync(filter, update);
         }
@@ -73,7 +74,7 @@ namespace XFit.Services._Wallet
         /// <returns></returns>
         public async Task MakeWalletShouldUpdateAsync(List<string> publicKeys)
         {
-            var filter = Builders<Wallet>.Filter.In(q => q.WalletId, publicKeys);
+            var filter = Builders<Wallet>.Filter.In(q => q.PublicKey, publicKeys);
             var update = Builders<Wallet>.Update.Set(q => q.ShouldUpdate, true);
             await _walletRepository.UpdateManyAsync(filter, update);
         }
@@ -94,7 +95,7 @@ namespace XFit.Services._Wallet
 
                 var wallet = new Wallet
                 {
-                    WalletId = publicKey,
+                    PublicKey = publicKey,
                     TotalBalance = 0m,
                     AvailableBalance = 0m,
                     FrozenBalance = 0m,
@@ -125,6 +126,7 @@ namespace XFit.Services._Wallet
 
             if (wallet == null)
                 return;
+
             var walletresult = await SyncWalletAsync(wallet);
             wallet.FrozenBalance = walletresult.FrozenBalance;
             wallet.AvailableBalance = walletresult.AvailableBalance;
@@ -226,7 +228,7 @@ namespace XFit.Services._Wallet
             var allTransactionsQuery = withdrawalsQuery
                 .Concat(attendancePaymentsQuery)
                 .OrderByDescending(x => x.CreatedMoment)
-                .ThenByDescending(x => x.Type); // پایدارسازی ترتیب
+                .ThenByDescending(x => x.Type);
 
             var totalCount = await allTransactionsQuery.CountAsync();
 
@@ -252,9 +254,9 @@ namespace XFit.Services._Wallet
         private async Task<WalletResult> SyncWalletAsync(Wallet wallet)
         {
             if (wallet.Role == UserRole.Client)
-               return await SyncClientWalletAsync(wallet.WalletId);
+               return await SyncClientWalletAsync(wallet.PublicKey);
             else
-               return await SyncGymOwnerWalletAsync(wallet.WalletId);
+               return await SyncGymOwnerWalletAsync(wallet.PublicKey);
 
         } 
 
