@@ -29,7 +29,7 @@ namespace XFit.Services._Gym
         GymLevelSettings _gymLevelSettings,
         ILogger<GymService> _logger,
         IGymAttendanceRepository _gymAttendanceRepository,
-        IGymClosureRepository _gymClosureRepository,
+        //IGymClosureRepository _gymClosureRepository,
         IGymFacilityRepository _gymFacilityRepository) : IGymService, IScopedDependency
     {
 
@@ -1484,14 +1484,14 @@ namespace XFit.Services._Gym
                 iranToday.AddDays(2).AddDays(1).AddTicks(-1),
                 iranTimeZone);
 
-            var closureFilter =
-                Builders<GymClosure>.Filter.Eq(c => c.GymId, gym.GymId) &
-                Builders<GymClosure>.Filter.Gte(x => x.ClosureDate, fromUtc) &
-                Builders<GymClosure>.Filter.Lte(x => x.ClosureDate, toUtc);
+            //var closureFilter =
+            //    Builders<GymClosure>.Filter.Eq(c => c.GymId, gym.GymId) &
+            //    Builders<GymClosure>.Filter.Gte(x => x.ClosureDate, fromUtc) &
+            //    Builders<GymClosure>.Filter.Lte(x => x.ClosureDate, toUtc);
 
-            var closures = await _gymClosureRepository.Find(closureFilter).Limit(100).ToListAsync();
+            //var closures = await _gymClosureRepository.Find(closureFilter).Limit(100).ToListAsync();
+            //SetUpcomingClosures(fullResult, closures);
 
-            SetUpcomingClosures(fullResult, closures);
 
             return fullResult;
 
@@ -1503,25 +1503,25 @@ namespace XFit.Services._Gym
         /// </summary>
         /// <param name="result"></param>
         /// <param name="closures"></param>
-        private void SetUpcomingClosures(GymFullResult result, IEnumerable<GymClosure> closures)
-        {
-            result.UpcomingClosures = closures
-                .Select(c => new GymClosureResult
-                {
-                    GymClosureId = c.GymClosureId,
-                    GymId = c.GymId,
-                    ClosureDate = c.ClosureDate,
-                    DayOfWeek = c.DayOfWeek,
-                    IsAllDay = c.IsAllDay,
-                    From = c.From,
-                    To = c.To,
-                    Reason = c.Reason,
-                    CreatedMoment = c.CreatedMoment,
-                    ModifiedMoment = c.ModifiedMoment
-                })
-                .OrderBy(c => c.ClosureDate)
-                .ToList();
-        }
+        //private void SetUpcomingClosures(GymFullResult result, IEnumerable<GymClosure> closures)
+        //{
+        //    result.UpcomingClosures = closures
+        //        .Select(c => new GymClosureResult
+        //        {
+        //            GymClosureId = c.GymClosureId,
+        //            GymId = c.GymId,
+        //            ClosureDate = c.ClosureDate,
+        //            DayOfWeek = c.DayOfWeek,
+        //            IsAllDay = c.IsAllDay,
+        //            From = c.From,
+        //            To = c.To,
+        //            Reason = c.Reason,
+        //            CreatedMoment = c.CreatedMoment,
+        //            ModifiedMoment = c.ModifiedMoment
+        //        })
+        //        .OrderBy(c => c.ClosureDate)
+        //        .ToList();
+        //}
 
 
         /// <summary>

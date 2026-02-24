@@ -37,7 +37,7 @@ namespace XFit.Services._Gym.DTOs.Results
 
     public class GymFullResult : GymResult
     {
-        public List<GymClosureResult> UpcomingClosures { get; set; } = new List<GymClosureResult>();
+        //public List<GymClosureResult> UpcomingClosures { get; set; } = new List<GymClosureResult>();
     }
 
 
