@@ -23,7 +23,11 @@ namespace RZPrime.Api.Utilities.Middlewares
             {
             "https://ciryrep.ir",
             "https://api.ciryrep.ir",
-            "https://app.ciryrep.ir"          
+            "https://app.ciryrep.ir",
+            "https://ciryrep.ir",          
+            "http://192.168.100.5:3000",
+            "null",
+            ""
             };
 
             //if (!allowedOrigins.Contains(origin))
