@@ -21,10 +21,10 @@ namespace RZPrime.Api.Utilities.Middlewares
 
             var allowedOrigins = new[]
             {
-            "https://ciryrep.ir",
-            "https://api.ciryrep.ir",
-            "https://app.ciryrep.ir",
-            "https://ciryrep.ir",          
+            "https://cityrep.ir",
+            "https://api.cityrep.ir",
+            "https://app.cityrep.ir",
+            "https://cityrep.ir",          
             "http://192.168.100.5:3000",
             "null",
             ""
