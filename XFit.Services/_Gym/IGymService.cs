@@ -14,6 +14,7 @@ namespace XFit.Services._Gym
         Task<GymResult> EditGymCommonDataAsync(EditGymCommonDataUpdate update, string gymOwnerPublicKey); 
         Task<GymResult> EditGymGeoLocationsync(EditGymGeoLocationUpdate update, string gymOwnerPublicKey);
 
+        Task<GymResult> AddTrendToGymAsync(AddTrendToGymUpdate update,string gymOwnerPublicKey);
         Task<GymResult> AddSessionForGymTrendAsync(AddSessionForGymTrendUpdate update,string gymOwnerPublicKey);
         Task<GymResult> RemoveSessionForGymTrendAsync(RemoveGymSessionUpdate update,string gymOwnerPublicKey);
 

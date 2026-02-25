@@ -413,7 +413,7 @@ namespace XFit.Services._GymOwner
                 {
                     PhoneNumber = phoneNumber,
                     Status = UserStatus.NotVerified,
-                    Role = UserRole.Client,
+                    Role = UserRole.GymOwner,
                     Permissions = GetPermissionsOfRole(UserRole.Client).Select(p => p.Code).ToList(),
                     //user.VerificationCode = _randomService.GetSecureNumericString(4);
                     VerificationCode = "1234",
