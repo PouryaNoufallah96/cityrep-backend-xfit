@@ -21,15 +21,9 @@ namespace RZPrime.Api.Utilities.Middlewares
 
             var allowedOrigins = new[]
             {
-            "https://x.com",
-            "https://api.x.com",
-            "https://app.x.com",
-            "https://mp.x.com",
-            "http://x:5132",
-            "http://x:3000",
-            "http://192.168.100.5:3000",
-            "null",
-            ""
+            "https://ciryrep.ir",
+            "https://api.ciryrep.ir",
+            "https://app.ciryrep.ir"          
             };
 
             //if (!allowedOrigins.Contains(origin))

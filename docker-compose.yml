@@ -1,8 +1,8 @@
 version: "3"
 services:
-  xfit.metacoinguard.com:
-    image: xfit.api
-    container_name: xfit.metacoinguard.com
+  api.cityrep.ir:
+    image: cityrep.api
+    container_name: api.cityrep.ir
     restart: unless-stopped
     ports:
       - "127.0.0.1:3002:80"
