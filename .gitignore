@@ -171,6 +171,7 @@ DocProject/Help/html
 publish/
 
 # Publish Web Output
+temp_auto_push.bat
 *.[Pp]ublish.xml
 *.azurePubxml
 # Note: Comment the next line if you want to checkin your web deploy settings,
@@ -341,3 +342,7 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+
+.env
+.env.*branch_structure.json
+branch_structure.json
