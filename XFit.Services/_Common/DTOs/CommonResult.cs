@@ -2,7 +2,7 @@
 {
     public class CommonResult
     {
-        public DateTime CreatedMoment { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedMoment { get; set; } 
         public DateTime? ModifiedMoment { get; set; } = null;
     }
 }
