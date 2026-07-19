@@ -3,5 +3,6 @@
     public class VerifyDepositUpdate
     {
         public string DepositReference { get; set; }
+        public bool? MockOutcome { get; set; }
     }
 }

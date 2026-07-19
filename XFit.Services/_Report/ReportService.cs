@@ -25,7 +25,8 @@ namespace XFit.Services._Report
                 .Where(x => x.GymOwnerPublicKey == gymOwner)
                 .Where(x =>
                     x.GymAttendanceState == GymAttendanceState.Reserved ||
-                    x.GymAttendanceState == GymAttendanceState.Used)
+                    x.GymAttendanceState == GymAttendanceState.Used ||
+                    x.GymAttendanceState == GymAttendanceState.NoShow)
                 .GroupBy(x => 1)
                 .Select(g => new GymOwnerOverviewResult
                 {
@@ -35,7 +36,9 @@ namespace XFit.Services._Report
                         x.GymAttendanceState == GymAttendanceState.Reserved),
 
                     TotalIncome = g
-                        .Where(x => x.GymAttendanceState == GymAttendanceState.Used)
+                        .Where(x =>
+                            x.GymAttendanceState == GymAttendanceState.Used ||
+                            x.GymAttendanceState == GymAttendanceState.NoShow)
                         .Sum(x => x.SessionPrice)
                 })
                 .FirstOrDefaultAsync();
@@ -60,7 +63,8 @@ namespace XFit.Services._Report
                 .Where(x =>
                     x.GymOwnerPublicKey == gymOwner &&
                     (x.GymAttendanceState == GymAttendanceState.Reserved ||
-                     x.GymAttendanceState == GymAttendanceState.Used) &&
+                     x.GymAttendanceState == GymAttendanceState.Used ||
+                     x.GymAttendanceState == GymAttendanceState.NoShow) &&
                     x.SessionDate >= startDate &&
                     x.SessionDate < endDate)
                 .GroupBy(x => x.SessionDate.Date)

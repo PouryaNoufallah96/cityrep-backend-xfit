@@ -31,6 +31,8 @@ namespace XFit.Services._GymAttendance.DTOs
         public long GymEnd { get; set; }
         public long? ClientStartTime { get; set; } = null;
         public string ClinetFullName { get; set; }
+        public string ClientPhoneNumber { get; set; }
+        public DateTime? ClientBirthDay { get; set; }
 
 
         public string Notes { get; set; }

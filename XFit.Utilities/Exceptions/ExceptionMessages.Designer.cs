@@ -122,6 +122,60 @@ namespace XFit.Utilities.Exceptions {
                 return ResourceManager.GetString("DuplicateRegister", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to جلسه مورد نظر یافت نشد.
+        /// </summary>
+        public static string GymAttendanceNotFound {
+            get {
+                return ResourceManager.GetString("GymAttendanceNotFound", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to امکان ثبت ورود برای این رزرو وجود ندارد.
+        /// </summary>
+        public static string GymAttendanceCheckInUnavailable {
+            get {
+                return ResourceManager.GetString("GymAttendanceCheckInUnavailable", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to ثبت عدم حضور فقط برای رزروهای پایان‌یافته امکان‌پذیر است.
+        /// </summary>
+        public static string GymAttendanceNoShowUnavailable {
+            get {
+                return ResourceManager.GetString("GymAttendanceNoShowUnavailable", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to سطح باشگاه یافت نشد.
+        /// </summary>
+        public static string GymLevelNotFound {
+            get {
+                return ResourceManager.GetString("GymLevelNotFound", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to باشگاه یافت نشد.
+        /// </summary>
+        public static string GymNotFound {
+            get {
+                return ResourceManager.GetString("GymNotFound", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to مقدار واریز معتبر نیست.
+        /// </summary>
+        public static string InvalidDepositAmount {
+            get {
+                return ResourceManager.GetString("InvalidDepositAmount", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Insufficient Balance!.
@@ -156,6 +210,24 @@ namespace XFit.Utilities.Exceptions {
         public static string PaswordSend {
             get {
                 return ResourceManager.GetString("PaswordSend", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to تایید پرداخت ناموفق بود.
+        /// </summary>
+        public static string PaymentVerificationFailed {
+            get {
+                return ResourceManager.GetString("PaymentVerificationFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to سرویس پرداخت در دسترس نیست.
+        /// </summary>
+        public static string PaymentServiceUnavailable {
+            get {
+                return ResourceManager.GetString("PaymentServiceUnavailable", resourceCulture);
             }
         }
         

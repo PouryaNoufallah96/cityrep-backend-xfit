@@ -11,6 +11,8 @@ namespace Xfit.Domain.Collections
         public string GymAttendanceReference { get; set; }
         public string ClientPublicKey { get; set; }
         public string ClinetFullName { get; set; }
+        public string ClientPhoneNumber { get; set; }
+        public DateTime? ClientBirthDay { get; set; }
 
 
         // destination 
@@ -38,5 +40,14 @@ namespace Xfit.Domain.Collections
         public decimal? GivenRate { get; set; } = null; 
     }
 
-    public enum GymAttendanceState {Pending, Reserved, Used, Expired , Failed };
+    public enum GymAttendanceState
+    {
+        Pending = 0,
+        Reserved = 1,
+        Used = 2,
+        Expired = 3,
+        Failed = 4,
+        NoShow = 5,
+        Cancelled = 6
+    };
 }

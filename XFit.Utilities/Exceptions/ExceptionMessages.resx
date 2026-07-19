@@ -138,6 +138,24 @@
   <data name="DuplicateRegister" xml:space="preserve">
     <value>کاربری با این شماره همراه قبلا ثبت نام کرده است </value>
   </data>
+  <data name="GymAttendanceNotFound" xml:space="preserve">
+    <value>جلسه مورد نظر یافت نشد</value>
+  </data>
+  <data name="GymAttendanceCheckInUnavailable" xml:space="preserve">
+    <value>امکان ثبت ورود برای این رزرو وجود ندارد</value>
+  </data>
+  <data name="GymAttendanceNoShowUnavailable" xml:space="preserve">
+    <value>ثبت عدم حضور فقط برای رزروهای پایان‌یافته امکان‌پذیر است</value>
+  </data>
+  <data name="GymLevelNotFound" xml:space="preserve">
+    <value>سطح باشگاه یافت نشد</value>
+  </data>
+  <data name="GymNotFound" xml:space="preserve">
+    <value>باشگاه یافت نشد</value>
+  </data>
+  <data name="InvalidDepositAmount" xml:space="preserve">
+    <value>مقدار واریز معتبر نیست</value>
+  </data>
   <data name="InsufficientBalancedException" xml:space="preserve">
     <value>Insufficient Balance!</value>
   </data>
@@ -149,6 +167,12 @@
   </data>
   <data name="PaswordSend" xml:space="preserve">
     <value>گذرواژه یکبار مصرف هر 5 دقیقه یکبار میتوان ارسال شود </value>
+  </data>
+  <data name="PaymentVerificationFailed" xml:space="preserve">
+    <value>تایید پرداخت ناموفق بود</value>
+  </data>
+  <data name="PaymentServiceUnavailable" xml:space="preserve">
+    <value>سرویس پرداخت در دسترس نیست</value>
   </data>
   <data name="PhoneNumberIsActive" xml:space="preserve">
     <value>شماره همراه قبلا تایید شده است </value>

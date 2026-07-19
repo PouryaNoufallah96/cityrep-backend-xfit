@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Options;
+using XFit.Services._Deposit.DTOs.Settings;
 using XFit.Services._File.DTOs.Settings;
 using XFit.Services._Gateway;
 using XFit.Services._Gym.DTOs.Settings;
@@ -12,6 +13,7 @@ namespace XFit.Utilities.Configurations
             services.RegisterSetting<GymLevelSettings>(configuration.GetSection(nameof(GymLevelSettings)));
             services.RegisterSetting<IRTHandlerSettings>(configuration.GetSection(nameof(IRTHandlerSettings)));
             services.RegisterSetting<FileSettings>(configuration.GetSection(nameof(FileSettings)));
+            services.RegisterSetting<MockPaymentSettings>(configuration.GetSection(nameof(MockPaymentSettings)));
         }
 
         private static void RegisterSetting<TSettings>(this IServiceCollection services, IConfigurationSection configuration)
@@ -30,4 +32,3 @@ namespace XFit.Utilities.Configurations
         }
     }
 }
- 

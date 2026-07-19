@@ -271,7 +271,8 @@ namespace XFit.Services._Wallet
             var totalIncome = await _gymAttendanceRepository.AsQueryable()
                 .Where(q =>
                     q.GymOwnerPublicKey == whois &&
-                    q.GymAttendanceState == GymAttendanceState.Used)
+                    (q.GymAttendanceState == GymAttendanceState.Used ||
+                     q.GymAttendanceState == GymAttendanceState.NoShow))
                 .SumAsync(q => q.SessionPrice);
 
             var withdrawalSums = await _withdrawalRepository.AsQueryable()
@@ -317,7 +318,10 @@ namespace XFit.Services._Wallet
              .SumAsync(q => q.Amount);
 
             var clientAttendance = await _gymAttendanceRepository.AsQueryable()
-                .Where(q => q.ClientPublicKey == whois && q.GymAttendanceState != GymAttendanceState.Pending).SumAsync(q => q.SessionPrice);
+                .Where(q => q.ClientPublicKey == whois &&
+                    q.GymAttendanceState != GymAttendanceState.Pending &&
+                    q.GymAttendanceState != GymAttendanceState.Failed)
+                .SumAsync(q => q.SessionPrice);
 
             var balance = clientDeposits - clientAttendance;
 

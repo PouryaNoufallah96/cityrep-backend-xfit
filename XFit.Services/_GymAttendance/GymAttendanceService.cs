@@ -7,12 +7,13 @@ using Xfit.Domain.Collections;
 using Xfit.Domain.Repositories;
 using Xfit.Domain.Repositories.Contracts;
 using XFit.Services._Deposit;
-using XFit.Services._Deposit.DTOs;
 using XFit.Services._Gym;
 using XFit.Services._Gym.DTOs.Updates;
 using XFit.Services._GymAttendance.DTOs;
 using XFit.Services._Wallet;
 using XFit.Utilities.Constants;
+using XFit.Utilities.Enums;
+using XFit.Utilities.Exceptions;
 using XFit.Utilities.Exceptions.Common;
 using XFit.Utilities.MongoDatabase.Extensions;
 using XFit.Utilities.MongoDatabase.Filter;
@@ -21,7 +22,9 @@ using static XFit.Utilities.Constants.RegisterMode;
 
 namespace XFit.Services._GymAttendance
 {
-    public class GymAttendanceService(IGymAttendanceRepository _gymAttendanceRepository, ILogger<GymAttendanceService> _logger,
+    public class GymAttendanceService(IGymAttendanceRepository _gymAttendanceRepository,
+        IClientRepository _clientRepository,
+        ILogger<GymAttendanceService> _logger,
         IGymService _gymService,
         IDepositService _depositService,
         IRandomService _randomService,
@@ -115,6 +118,8 @@ namespace XFit.Services._GymAttendance
 
             var attendancePrice = session.Price;
             var clientBalance = await GetClientBalanceAsync(whois);
+            var client = await _clientRepository.FindOneAsync(x => x.PublicKey == whois)
+                ?? throw new NotFoundException(ExceptionMessages.UserNotFound);
 
 
             DateTime GetSessionExpireTime(DayOfWeek day, long toMinutes)
@@ -142,6 +147,8 @@ namespace XFit.Services._GymAttendance
                 SessionDate = GetSessionDate(sessionDay.Value),
                 ClientPublicKey = whois,
                 ClinetFullName = CurrentRequestContext.FullName,
+                ClientPhoneNumber = client.PhoneNumber,
+                ClientBirthDay = client.BirthDay,
 
                 GymId = gym.GymId,
                 GymTitle = gym.Title,
@@ -183,7 +190,7 @@ namespace XFit.Services._GymAttendance
             if (attendancePrice > clientBalance)
             {
                 newAttendance.GymAttendanceState = GymAttendanceState.Pending;
-                var depositRef = await _depositService.CreateDepositAsync(new CreateDepositUpdate { Amount = remain }, newAttendance.ClientPublicKey);
+                var depositRef = await _depositService.CreateBookingDepositAsync(remain, newAttendance.ClientPublicKey);
                 newAttendance.DepositReference = depositRef;
             }
 
@@ -196,6 +203,7 @@ namespace XFit.Services._GymAttendance
             return new CreateGymAttendanceByClientResult
             {
                 AttendanceReference = newAttendance.GymAttendanceReference,
+                DepositReference = newAttendance.DepositReference,
                 GatewayUrl = newAttendance.GymAttendanceState == GymAttendanceState.Pending ? "gatewayurl" : null,
                 Remain = remain,
                 State = newAttendance.GymAttendanceState
@@ -325,14 +333,10 @@ namespace XFit.Services._GymAttendance
         }
 
 
-        /// <summary>
-        /// use for expire attendances that their payment code time is finished
-        /// </summary>
-        /// <returns></returns>
         public async Task ExpireAttendanceAsync()
         {
             var filter = Builders<GymAttendance>.Filter.And(
-                Builders<GymAttendance>.Filter.Eq(x => x.GymAttendanceState, GymAttendanceState.Reserved),
+                Builders<GymAttendance>.Filter.Eq(x => x.GymAttendanceState, GymAttendanceState.Pending),
                 Builders<GymAttendance>.Filter.Lte(x => x.ExpirePaymentCode, DateTime.UtcNow)
             );
 
@@ -340,10 +344,8 @@ namespace XFit.Services._GymAttendance
                 .Set(x => x.GymAttendanceState, GymAttendanceState.Expired);
 
             var result = await _gymAttendanceRepository.UpdateManyAsync(filter, update);
-
-            _logger.LogInformation($"Expired {result.ModifiedCount} attendances");
+            _logger.LogInformation($"Expired {result.ModifiedCount} pending attendances");
         }
-
 
         /// <summary>
         /// this method use for add or update rate to attendance by client
@@ -383,6 +385,20 @@ namespace XFit.Services._GymAttendance
 
         #region GymOwner
 
+        public async Task<GetGymOwnerGymAttendanceResult> GetAttendanceByReferenceByGymOwnerAsync(
+        VerifyGymAttendaceByGymOwnerUpdate update,
+        string whois)
+        {
+            var attendance = await _gymAttendanceRepository.FindOneAsync(q =>
+                q.GymOwnerPublicKey == whois &&
+                q.GymAttendanceReference.ToLower() == update.AttendanceReference.ToLower())
+                ?? throw new NotFoundException(
+                    ApiResultStatusCode.NotFound,
+                    ExceptionMessages.GymAttendanceNotFound);
+
+            return ToGymOwnerGymAttendanceResult(attendance);
+        }
+
         /// <summary>
         /// this method use for verify attendance by gym owner
         /// </summary>
@@ -393,27 +409,70 @@ namespace XFit.Services._GymAttendance
         /// <exception cref="BadRequestException"></exception>
         public async Task<bool> VerifyGymAttendaceByGymOwnerAsync(VerifyGymAttendaceByGymOwnerUpdate update, string whois)
         {
-            var attendance = await _gymAttendanceRepository.FindOneAsync(q => q.GymOwnerPublicKey == whois && q.GymAttendanceReference.ToLower() == update.AttendanceReference.ToLower()) ??
-                 throw new NotFoundException("جلسه ی مورد نظر یافت نشد");
+            var attendance = await _gymAttendanceRepository.FindOneAsync(q =>
+                q.GymOwnerPublicKey == whois &&
+                q.GymAttendanceReference.ToLower() == update.AttendanceReference.ToLower())
+                ?? throw new NotFoundException(ExceptionMessages.GymAttendanceNotFound);
 
-            if (attendance.GymAttendanceState == GymAttendanceState.Used)
-                throw new BadRequestException("این جلسه از قبل استفاده شده است");
-
-            if (attendance.GymAttendanceState == GymAttendanceState.Expired)
-                throw new BadRequestException("این جلسه منقضی  شده و  قابل تأیید نیست");
-
-            if (attendance.ExpirePaymentCode < DateTime.UtcNow)
-                throw new BadRequestException("مهلت پرداخت این جلسه به پایان رسیده است");
-
-            attendance.GymAttendanceState = GymAttendanceState.Used;
+            if (attendance.GymAttendanceState != GymAttendanceState.Reserved || HasSessionEnded(attendance))
+                throw new BadRequestException(ExceptionMessages.GymAttendanceCheckInUnavailable);
 
             var iranTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Tehran");
             var nowIran = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, iranTimeZone);
-            attendance.ClientStartTime = nowIran.Hour * 60 + nowIran.Minute;
+            var attendanceUpdate = Builders<GymAttendance>.Update
+                .Set(x => x.GymAttendanceState, GymAttendanceState.Used)
+                .Set(x => x.ClientStartTime, nowIran.Hour * 60 + nowIran.Minute);
 
-            await _gymAttendanceRepository.ReplaceOneAsync(attendance);
+            var updatedAttendance = await _gymAttendanceRepository.FindOneAndUpdateAsync(q =>
+                q.GymOwnerPublicKey == whois &&
+                q.GymAttendanceReference.ToLower() == update.AttendanceReference.ToLower() &&
+                q.GymAttendanceState == GymAttendanceState.Reserved,
+                attendanceUpdate);
+
+            if (updatedAttendance == null)
+                throw new BadRequestException(ExceptionMessages.GymAttendanceCheckInUnavailable);
+
             await _walletService.MakeWalletShouldUpdateAsync(attendance.GymOwnerPublicKey);
             return true;
+        }
+
+        public async Task<bool> MarkNoShowByGymOwnerAsync(VerifyGymAttendaceByGymOwnerUpdate update, string whois)
+        {
+            var attendance = await _gymAttendanceRepository.FindOneAsync(q =>
+                q.GymOwnerPublicKey == whois &&
+                q.GymAttendanceReference.ToLower() == update.AttendanceReference.ToLower())
+                ?? throw new NotFoundException(ExceptionMessages.GymAttendanceNotFound);
+
+            if (attendance.GymAttendanceState != GymAttendanceState.Reserved || !HasSessionEnded(attendance))
+                throw new BadRequestException(ExceptionMessages.GymAttendanceNoShowUnavailable);
+
+            var attendanceUpdate = Builders<GymAttendance>.Update
+                .Set(x => x.GymAttendanceState, GymAttendanceState.NoShow);
+
+            var updatedAttendance = await _gymAttendanceRepository.FindOneAndUpdateAsync(q =>
+                q.GymOwnerPublicKey == whois &&
+                q.GymAttendanceReference.ToLower() == update.AttendanceReference.ToLower() &&
+                q.GymAttendanceState == GymAttendanceState.Reserved,
+                attendanceUpdate);
+
+            if (updatedAttendance == null)
+                throw new BadRequestException(ExceptionMessages.GymAttendanceNoShowUnavailable);
+
+            await _walletService.MakeWalletShouldUpdateAsync(attendance.GymOwnerPublicKey);
+            return true;
+        }
+
+        private static bool HasSessionEnded(GymAttendance attendance)
+        {
+            var iranTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Tehran");
+            var sessionDateIran = attendance.SessionDate.Kind == DateTimeKind.Utc
+                ? TimeZoneInfo.ConvertTimeFromUtc(attendance.SessionDate, iranTimeZone).Date
+                : attendance.SessionDate.Date;
+            var sessionEndIran = DateTime.SpecifyKind(
+                sessionDateIran.AddMinutes(attendance.GymEnd),
+                DateTimeKind.Unspecified);
+
+            return DateTime.UtcNow >= TimeZoneInfo.ConvertTimeToUtc(sessionEndIran, iranTimeZone);
         }
 
 
@@ -430,10 +489,12 @@ namespace XFit.Services._GymAttendance
             var result = new GetGymOwnerGymAttendanceListResult();
 
             var query = _gymAttendanceRepository.AsQueryable()
-                .Where(x => x.GymOwnerPublicKey == whois).Where(q => q.GymAttendanceState == GymAttendanceState.Used);
+                .Where(x => x.GymOwnerPublicKey == whois);
 
-            //if (update.States != null && update.States.Any())
-            //    query = query.Where(x => update.States.Contains(x.GymAttendanceState));
+            if (update.States != null && update.States.Any())
+                query = query.Where(x => update.States.Contains(x.GymAttendanceState));
+            else
+                query = query.Where(x => x.GymAttendanceState == GymAttendanceState.Used);
 
             if (update.Levels != null && update.Levels.Any())
                 query = query.Where(x => update.Levels.Contains(x.Level));
@@ -443,6 +504,12 @@ namespace XFit.Services._GymAttendance
 
             if (update.To.HasValue)
                 query = query.Where(x => x.CreatedMoment <= update.To.Value);
+
+            if (update.SessionDateFrom.HasValue)
+                query = query.Where(x => x.SessionDate >= update.SessionDateFrom.Value);
+
+            if (update.SessionDateTo.HasValue)
+                query = query.Where(x => x.SessionDate <= update.SessionDateTo.Value);
 
             if (!string.IsNullOrWhiteSpace(update.Search))
             {
@@ -472,38 +539,45 @@ namespace XFit.Services._GymAttendance
                 .ToListAsync();
 
 
-            result.Data = data.Select(x => new GetGymOwnerGymAttendanceResult
-            {
-                GymAttendanceId = x.GymAttendanceId,
-                GymAttendanceReference = x.GymAttendanceReference,
-
-                GymId = x.GymId,
-                GymTitle = x.GymTitle,
-                GymTrendId = x.GymTrendId,
-                GymTrendTitle = x.GymTrendTitle,
-                GymOwnerPublicKey = x.GymOwnerPublicKey,
-
-                Notes = x.Notes,
-                Level = x.Level,
-                SessionPrice = x.SessionPrice,
-
-                ExpirePaymentCode = x.ExpirePaymentCode,
-                GymAttendanceState = x.GymAttendanceState,
-                ClientStartTime = x.ClientStartTime,
-                ClinetFullName = x.ClinetFullName,
-                GymEnd = x.GymEnd,
-                GymSessionId = x.GymSessionId,
-                GymStart = x.GymStart,
-                GymTimeType = x.GymTimeType,
-                GivenRate = x.GivenRate,
-                GymImageUrl = x.GymImageUrl,
-                GymAddress = x.GymAddress,
-                CreatedMoment = x.CreatedMoment,
-                ModifiedMoment = x.ModifiedMoment,
-                SessionDate = x.SessionDate
-            }).ToList();
+            result.Data = data.Select(ToGymOwnerGymAttendanceResult).ToList();
 
             return result;
+        }
+
+        private static GetGymOwnerGymAttendanceResult ToGymOwnerGymAttendanceResult(GymAttendance attendance)
+        {
+            return new GetGymOwnerGymAttendanceResult
+            {
+                GymAttendanceId = attendance.GymAttendanceId,
+                GymAttendanceReference = attendance.GymAttendanceReference,
+
+                GymId = attendance.GymId,
+                GymTitle = attendance.GymTitle,
+                GymTrendId = attendance.GymTrendId,
+                GymTrendTitle = attendance.GymTrendTitle,
+                GymOwnerPublicKey = attendance.GymOwnerPublicKey,
+
+                Notes = attendance.Notes,
+                Level = attendance.Level,
+                SessionPrice = attendance.SessionPrice,
+
+                ExpirePaymentCode = attendance.ExpirePaymentCode,
+                GymAttendanceState = attendance.GymAttendanceState,
+                ClientStartTime = attendance.ClientStartTime,
+                ClinetFullName = attendance.ClinetFullName,
+                ClientPhoneNumber = attendance.ClientPhoneNumber,
+                ClientBirthDay = attendance.ClientBirthDay,
+                GymEnd = attendance.GymEnd,
+                GymSessionId = attendance.GymSessionId,
+                GymStart = attendance.GymStart,
+                GymTimeType = attendance.GymTimeType,
+                GivenRate = attendance.GivenRate,
+                GymImageUrl = attendance.GymImageUrl,
+                GymAddress = attendance.GymAddress,
+                CreatedMoment = attendance.CreatedMoment,
+                ModifiedMoment = attendance.ModifiedMoment,
+                SessionDate = attendance.SessionDate
+            };
         }
 
 
@@ -519,7 +593,10 @@ namespace XFit.Services._GymAttendance
                 .SumAsync(q => q.Amount);
 
             var clientAttendance = await _gymAttendanceRepository.AsQueryable()
-                .Where(q => q.ClientPublicKey == whois && q.GymAttendanceState != GymAttendanceState.Pending).SumAsync(q => q.SessionPrice);
+                .Where(q => q.ClientPublicKey == whois &&
+                    q.GymAttendanceState != GymAttendanceState.Pending &&
+                    q.GymAttendanceState != GymAttendanceState.Failed)
+                .SumAsync(q => q.SessionPrice);
 
 
             var balance = clientDeposits - clientAttendance;

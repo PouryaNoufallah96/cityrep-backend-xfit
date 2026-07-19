@@ -17,7 +17,9 @@ namespace XFit.Services._GymAttendance
 
         #region GymOwner
 
+        Task<GetGymOwnerGymAttendanceResult> GetAttendanceByReferenceByGymOwnerAsync(VerifyGymAttendaceByGymOwnerUpdate update, string whois);
         Task<bool> VerifyGymAttendaceByGymOwnerAsync(VerifyGymAttendaceByGymOwnerUpdate update, string whois);
+        Task<bool> MarkNoShowByGymOwnerAsync(VerifyGymAttendaceByGymOwnerUpdate update, string whois);
         Task<GetGymOwnerGymAttendanceListResult> GetGymOwnerGymAttendanceListAsync(GetGymOwnerGymAttendanceListUpdate update, string whois);
 
 

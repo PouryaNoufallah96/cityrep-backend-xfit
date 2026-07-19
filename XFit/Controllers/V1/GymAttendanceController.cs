@@ -49,9 +49,23 @@ namespace XFit.Controllers.V1
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
+        [SwaggerOperation(Summary = "Get gym attendance by reference for gym owner", Tags = ["GO-Attendance"])]
+        public async Task<GetGymOwnerGymAttendanceResult> GetAttendanceByReferenceByGymOwnerAsync(VerifyGymAttendaceByGymOwnerUpdate update)
+            => await _gymAttendanceService.GetAttendanceByReferenceByGymOwnerAsync(update, PublicKey);
+
+        [HttpPost("[action]")]
+        [CustomRateLimit]
+        [Authorize]
         [SwaggerOperation(Summary = "Verify gym attendance by gym owner", Tags = ["GO-Attendance"])]
         public async Task<bool> VerifyByGymOwnerAsync(VerifyGymAttendaceByGymOwnerUpdate update)
             => await _gymAttendanceService.VerifyGymAttendaceByGymOwnerAsync(update, PublicKey);
+
+        [HttpPost("[action]")]
+        [CustomRateLimit]
+        [Authorize]
+        [SwaggerOperation(Summary = "Mark gym attendance as no-show by gym owner", Tags = ["GO-Attendance"])]
+        public async Task<bool> MarkNoShowByGymOwnerAsync(VerifyGymAttendaceByGymOwnerUpdate update)
+            => await _gymAttendanceService.MarkNoShowByGymOwnerAsync(update, PublicKey);
 
         [HttpPost("[action]")]
         [CustomRateLimit]
