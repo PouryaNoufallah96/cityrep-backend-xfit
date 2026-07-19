@@ -13,13 +13,14 @@ namespace XFit.Services._Client.DTOs.Results
         public string FirstName { get; set; }
         public string LastName { get; set; }
 
-        public Gender Gender { get; set; }
+        public Gender? Gender { get; set; }
         public string Email { get; set; } = null;
         public ClientAddressInfo Address { get; set; } = null;
         public DateOnly? BirthDay { get; set; } = null;
         public bool IsProfileCompleted =>
         !string.IsNullOrWhiteSpace(FirstName) &&
         !string.IsNullOrWhiteSpace(LastName) &&
-        BirthDay.HasValue;
+        BirthDay.HasValue &&
+        Gender.HasValue;
     }
 }
