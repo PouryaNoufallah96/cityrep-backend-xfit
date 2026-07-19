@@ -27,6 +27,7 @@ namespace XFit.Services._Gym.DTOs.Results
 
         public List<WeekPriceDetail> WeekPrices { get; set; }
         public decimal Rate { get; set; }
+        public decimal RateCount { get; set; }
     }
 
     public class GymResult : GymLightResult

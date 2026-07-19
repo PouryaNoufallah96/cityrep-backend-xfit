@@ -22,6 +22,7 @@ namespace XFit.Services._Gym
         Task<GymResult> ActiveOrDeactiveGymSessionAsync(DeactiveGymSessionUpdate update, string gymOwnerPublicKey);
 
         Task<GymSessionsListResult> GetGymSessionsListAsync(GymSessionsListUpdate update,string gymOwnerPublicKey);
+        Task<GymSessionPriceBandResult> GetSessionPriceBandAsync(string gymOwnerPublicKey);
 
         Task<GymResult> EditGymAsync(EditGymUpdate update, string gymOwnerPublicKey);
         Task<GymListResult> GetAllGymsAsync(GymSimpleFilter filter, string whois);

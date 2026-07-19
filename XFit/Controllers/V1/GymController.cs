@@ -93,6 +93,14 @@ namespace XFit.Controllers.V1
         [HttpPost("[action]")]
         [CustomRateLimit]
         [Authorize]
+        [SwaggerOperation(Summary = "Get session price band", Tags = ["GO-Gym"])]
+        public async Task<GymSessionPriceBandResult> GetSessionPriceBandAsync()
+            => await _gymService.GetSessionPriceBandAsync(PublicKey);
+
+
+        [HttpPost("[action]")]
+        [CustomRateLimit]
+        [Authorize]
         [SwaggerOperation(Summary = "Get all gyms for owner", Tags = ["GO-Gym"])]
         public async Task<GymListResult> GetAllGymsAsync(GymSimpleFilter filter)
             => await _gymService.GetAllGymsAsync(filter, PublicKey);

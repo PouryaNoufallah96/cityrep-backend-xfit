@@ -15,6 +15,7 @@ using XFit.Services._Gym.DTOs.Results;
 using XFit.Services._Gym.DTOs.Settings;
 using XFit.Services._Gym.DTOs.Updates;
 using XFit.Services._GymClosure.DTOs;
+using XFit.Utilities.Exceptions;
 using XFit.Utilities.Exceptions.Common;
 using XFit.Utilities.MongoDatabase.Extensions;
 using XFit.Utilities.MongoDatabase.Filter;
@@ -745,6 +746,25 @@ namespace XFit.Services._Gym
             }
 
             return result;
+        }
+
+        public async Task<GymSessionPriceBandResult> GetSessionPriceBandAsync(
+            string gymOwnerPublicKey)
+        {
+            var gym = await _gymRepository.AsQueryable()
+                .Where(x => x.GymOwnerPublicKey == gymOwnerPublicKey)
+                .FirstOrDefaultAsync()
+                ?? throw new NotFoundException(ExceptionMessages.GymNotFound);
+
+            var gymLevel = _gymLevelSettings.FirstOrDefault(x => x.Level == gym.Level)
+                ?? throw new NotFoundException(ExceptionMessages.GymLevelNotFound);
+
+            return new GymSessionPriceBandResult
+            {
+                Level = gymLevel.Level,
+                FromPrice = gymLevel.FromPrice,
+                ToPrice = gymLevel.ToPrice
+            };
         }
 
 
@@ -1484,6 +1504,7 @@ namespace XFit.Services._Gym
                 WeekPrices = g.WeekPrices,
                 Slug = g.Slug,
                 Rate = g.Rate,
+                RateCount = g.RateCount,
 
                 CreatedMoment = g.CreatedMoment,
                 ModifiedMoment = g.ModifiedMoment,
@@ -1532,6 +1553,7 @@ namespace XFit.Services._Gym
                 Images = gym.Images,
                 State = gym.State,
                 Rate = gym.Rate,
+                RateCount = gym.RateCount,
                 SupportedGender = gym.SupportedGender,
                 Trends = gym.Trends,
                 Facilities = gym.Facilities,
@@ -1606,6 +1628,7 @@ namespace XFit.Services._Gym
         /// <param name="filters"></param>
         private static void ManageGymListFilters(GymFilter update, FilterDefinitionBuilder<Gym> builder, List<FilterDefinition<Gym>> filters)
         {
+            filters.Add(builder.In(g => g.State, [GymState.Active, GymState.Inactive]));
 
             if (update.Nearest != null)
             {
@@ -2294,6 +2317,7 @@ namespace XFit.Services._Gym
 
                 State = gym.State,
                 Rate = gym.Rate,
+                RateCount = gym.RateCount,
                 Slug = gym.Slug,
                 CreatedMoment = gym.CreatedMoment,
                 ModifiedMoment = gym.ModifiedMoment,
@@ -2333,6 +2357,9 @@ namespace XFit.Services._Gym
 
             if (attendance == null)
                 return;
+
+            attendance.GymAttendanceState = GymAttendanceState.Failed;
+            await _gymAttendanceRepository.ReplaceOneAsync(attendance);
 
             if (attendance.GymTimeType == GymTimeType.FreeTime)
                 return;
@@ -2521,13 +2548,6 @@ namespace XFit.Services._Gym
             //throw new BadRequestException("سشن ورزشی یافت نشد");
 
             attendance.GymAttendanceState = GymAttendanceState.Reserved;
-            if (session.Capacity.HasValue &&
-                session.UsedCapacity >= session.Capacity.Value)
-            {
-                attendance.GymAttendanceState = GymAttendanceState.Failed;
-                //throw new BadRequestException("ظرفیت این جلسه تکمیل شده است");
-            }
-
             await _gymAttendanceRepository.ReplaceOneAsync(attendance);
         }
 
