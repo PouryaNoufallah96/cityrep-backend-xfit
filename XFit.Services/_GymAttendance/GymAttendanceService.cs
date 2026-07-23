@@ -499,6 +499,9 @@ namespace XFit.Services._GymAttendance
             if (update.Levels != null && update.Levels.Any())
                 query = query.Where(x => update.Levels.Contains(x.Level));
 
+            if (update.GymTrendIds != null && update.GymTrendIds.Any())
+                query = query.Where(x => update.GymTrendIds.Contains(x.GymTrendId));
+
             if (update.From.HasValue)
                 query = query.Where(x => x.CreatedMoment >= update.From.Value);
 
@@ -518,7 +521,9 @@ namespace XFit.Services._GymAttendance
                 query = query.Where(x =>
                     x.GymTitle.Contains(search) ||
                     x.GymTrendTitle.Contains(search) ||
-                    x.GymAttendanceReference.Contains(search)
+                    x.GymAttendanceReference.Contains(search) ||
+                    x.ClinetFullName.Contains(search) ||
+                    x.ClientPhoneNumber.Contains(search)
                 );
             }
 
