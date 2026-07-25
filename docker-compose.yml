@@ -1,9 +1,37 @@
-version: "3"
+version: "3.8"
 services:
+  mongo:
+    image: mongo:7.0
+    container_name: mongo.cityrep.ir
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:27028:27017"
+    volumes:
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+      - mongo_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=$mongodb_username
+      - MONGO_INITDB_ROOT_PASSWORD=$mongodb_password
+      - MONGO_INITDB_DATABASE=$database_name
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'mongosh -u "$$MONGO_INITDB_ROOT_USERNAME" -p "$$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --quiet --eval "db.adminCommand(\"ping\").ok" | grep 1',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
   api.cityrep.ir:
     image: cityrep.api
     container_name: api.cityrep.ir
     restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
     ports:
       - "127.0.0.1:3002:80"
     volumes:
@@ -19,7 +47,7 @@ services:
       - FirewallSettings__Rules__0__IPAddresses__0=*
       - FirewallSettings__Rules__0__Policy=Allow
 
-      # Database
+      # Database — host `mongo` is the compose service name
       - MonjoSettings__ConnectionString=$mongodb_connection
       - MonjoSettings__DatabaseName=$database_name
 
@@ -38,7 +66,6 @@ services:
       # JWT Client Info
       - JwtServiceSettings__ClientInfo__web_mainsets=$jwtservicesettings_clientinfo_web_value
       - JwtServiceSettings__ClientInfo__app_mainappful=$jwtservicesettings_clientinfo_app_value
-
 
       # Application Pool Settings -> Applications[0]
       - ApplicationPoolSettings__Applications__0__ApplicationId=$applicationpoolsettings_applications_0_application_id
@@ -62,3 +89,9 @@ volumes:
       type: none
       o: bind
       device: /home/ubuntu/images
+  mongo_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/ubuntu/mongodb
