@@ -32,6 +32,9 @@ services:
 
       - FileSettings__ImagesPath=/images
 
+      # Mock payment
+      - MockPaymentSettings__Enabled=$mockpaymentsettings_enabled
+
       # JWT Client Info
       - JwtServiceSettings__ClientInfo__web_mainsets=$jwtservicesettings_clientinfo_web_value
       - JwtServiceSettings__ClientInfo__app_mainappful=$jwtservicesettings_clientinfo_app_value
