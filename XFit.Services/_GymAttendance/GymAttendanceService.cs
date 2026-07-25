@@ -29,6 +29,7 @@ namespace XFit.Services._GymAttendance
         IDepositService _depositService,
         IRandomService _randomService,
         IWalletService _walletService,
+        IGymTrendRepository _gymTrendRepository,
         //IGymClosureRepository _gymClosureRepository,
         IDepositRepository _depositRepository) : IGymAttendanceService, IScopedDependency
     {
@@ -154,6 +155,7 @@ namespace XFit.Services._GymAttendance
                 GymTitle = gym.Title,
                 GymTrendId = update.GymTrendId,
                 GymTrendTitle = trend.Title,
+                GymTrendIconUrl = trend.TrendIconUrl,
                 GymOwnerPublicKey = gym.GymOwnerPublicKey,
                 GymAddress = gym.Address,
                 GymImageUrl = gym.Images?
@@ -297,6 +299,9 @@ namespace XFit.Services._GymAttendance
                 .Take(size)
                 .ToListAsync();
 
+            var trendIcons = await GetTrendIconMapAsync(
+                data.Where(x => string.IsNullOrEmpty(x.GymTrendIconUrl)).Select(x => x.GymTrendId));
+
             result.Data = data.Select(x => new GetClientGymAttendanceResult
             {
                 GymAttendanceId = x.GymAttendanceId,
@@ -306,6 +311,8 @@ namespace XFit.Services._GymAttendance
                 GymTitle = x.GymTitle,
                 GymTrendId = x.GymTrendId,
                 GymTrendTitle = x.GymTrendTitle,
+                GymTrendIconUrl = x.GymTrendIconUrl
+                    ?? (trendIcons.TryGetValue(x.GymTrendId, out var icon) ? icon : null),
 
                 Notes = x.Notes,
                 Level = x.Level,
@@ -396,7 +403,11 @@ namespace XFit.Services._GymAttendance
                     ApiResultStatusCode.NotFound,
                     ExceptionMessages.GymAttendanceNotFound);
 
-            return ToGymOwnerGymAttendanceResult(attendance);
+            var trendIcons = string.IsNullOrEmpty(attendance.GymTrendIconUrl)
+                ? await GetTrendIconMapAsync([attendance.GymTrendId])
+                : null;
+
+            return ToGymOwnerGymAttendanceResult(attendance, trendIcons);
         }
 
         /// <summary>
@@ -543,13 +554,17 @@ namespace XFit.Services._GymAttendance
                 .Take(size)
                 .ToListAsync();
 
+            var trendIcons = await GetTrendIconMapAsync(
+                data.Where(x => string.IsNullOrEmpty(x.GymTrendIconUrl)).Select(x => x.GymTrendId));
 
-            result.Data = data.Select(ToGymOwnerGymAttendanceResult).ToList();
+            result.Data = data.Select(x => ToGymOwnerGymAttendanceResult(x, trendIcons)).ToList();
 
             return result;
         }
 
-        private static GetGymOwnerGymAttendanceResult ToGymOwnerGymAttendanceResult(GymAttendance attendance)
+        private static GetGymOwnerGymAttendanceResult ToGymOwnerGymAttendanceResult(
+            GymAttendance attendance,
+            IReadOnlyDictionary<string, string> trendIcons = null)
         {
             return new GetGymOwnerGymAttendanceResult
             {
@@ -560,6 +575,8 @@ namespace XFit.Services._GymAttendance
                 GymTitle = attendance.GymTitle,
                 GymTrendId = attendance.GymTrendId,
                 GymTrendTitle = attendance.GymTrendTitle,
+                GymTrendIconUrl = attendance.GymTrendIconUrl
+                    ?? (trendIcons != null && trendIcons.TryGetValue(attendance.GymTrendId, out var icon) ? icon : null),
                 GymOwnerPublicKey = attendance.GymOwnerPublicKey,
 
                 Notes = attendance.Notes,
@@ -608,6 +625,22 @@ namespace XFit.Services._GymAttendance
             return balance;
         }
 
+        private async Task<Dictionary<string, string>> GetTrendIconMapAsync(IEnumerable<string> trendIds)
+        {
+            var ids = trendIds.Where(id => !string.IsNullOrEmpty(id)).Distinct().ToList();
+            if (ids.Count == 0)
+                return new Dictionary<string, string>();
+
+            var trends = await _gymTrendRepository.AsQueryable()
+                .Where(t => ids.Contains(t.GymTrendId))
+                .Select(t => new { t.GymTrendId, t.IconUrl })
+                .ToListAsync();
+
+            return trends
+                .Where(t => !string.IsNullOrEmpty(t.IconUrl))
+                .ToDictionary(t => t.GymTrendId, t => t.IconUrl);
+        }
+
         #endregion
 
 
@@ -630,6 +663,7 @@ namespace XFit.Services._GymAttendance
                        GymTitle = x.GymTitle,
                        GymTrendId = x.GymTrendId,
                        GymTrendTitle = x.GymTrendTitle,
+                       GymTrendIconUrl = x.GymTrendIconUrl,
                        GymOwnerPublicKey = x.GymOwnerPublicKey,
 
                        Notes = x.Notes,

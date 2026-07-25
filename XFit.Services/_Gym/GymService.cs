@@ -1370,7 +1370,6 @@ namespace XFit.Services._Gym
             };
             trend.TrendIconUrl = iconUrl;
             trend.Title = title;
-            trend.TrendIconUrl = existing?.TrendIconUrl;
             trend.Men = BuildGenderWorkingHours(update.Men, gymLevel);
             trend.Women = BuildGenderWorkingHours(update.Women, gymLevel);
 
